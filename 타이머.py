@@ -9,26 +9,27 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS - 상단 패딩 수정으로 잘림 현상 해결
+# Custom CSS - 박스 높이 고정 및 레이아웃 통일
 st.markdown("""
     <style>
     .stApp {
         background-color: #FFFFFF;
     }
     
-    /* 상단 여백(padding-top)을 충분히 주어 텍스트 잘림 방지 */
     .block-container {
-        padding-top: 4rem !important;
+        padding-top: 3rem !important;
         padding-bottom: 2rem !important;
     }
     
-    /* 좌/우 컨테이너 스타일링 */
+    /* 좌/우 컬럼 컨테이너의 높이를 620px로 동일하게 고정 */
     [data-testid="stColumn"]:first-child [data-testid="stVerticalBlockBorderWrapper"],
     [data-testid="stColumn"]:last-child [data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #DDEBF7 !important;
         border: 2px solid #5B9BD5 !important;
         border-radius: 12px !important;
         padding: 15px !important;
+        height: 620px !important;
+        overflow-y: auto !important;
     }
 
     /* 폼 요소 스타일 */
@@ -128,7 +129,7 @@ def render_analog_clock(current_sec, max_sec, is_countdown=True):
 
     svg_code = f"""
     <div style="display: flex; justify-content: center; align-items: center; margin: 10px 0;">
-        <svg width="220" height="220" viewBox="0 0 200 200">
+        <svg width="200" height="200" viewBox="0 0 200 200">
             <circle cx="{cx}" cy="{cy}" r="{r + 4}" fill="none" stroke="#D32F2F" stroke-width="4"/>
             <circle cx="{cx}" cy="{cy}" r="{r}" fill="#000000" />
             <path d="{path_d}" fill="#FF0000" />
@@ -163,7 +164,7 @@ if st.session_state.is_running:
 # 5. 3컬럼 레이아웃 구성
 col_left, col_center, col_right = st.columns([1, 1.2, 1])
 
-# [좌측] 공부 리스트
+# [좌측] 공부 리스트 (높이 고정)
 with col_left:
     with st.container(border=True):
         st.markdown("<h3 style='margin-top:0; color:#000000; font-weight:bold;'>공부 리스트</h3>", unsafe_allow_html=True)
@@ -238,7 +239,7 @@ with col_center:
             st.session_state.stopwatch_sec = 0
             st.rerun()
 
-# [우측] 과목별 공부 시간
+# [우측] 과목별 공부 시간 (높이 고정)
 with col_right:
     with st.container(border=True):
         st.markdown("<h3 style='margin-top:0; color:#000000; font-weight:bold;'>과목별 공부 시간</h3>", unsafe_allow_html=True)
