@@ -9,15 +9,17 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS
+# Custom CSS - 상단 패딩 수정으로 잘림 현상 해결
 st.markdown("""
     <style>
     .stApp {
         background-color: #FFFFFF;
     }
+    
+    /* 상단 여백(padding-top)을 충분히 주어 텍스트 잘림 방지 */
     .block-container {
-        padding-top: 1.5rem;
-        padding-bottom: 1.5rem;
+        padding-top: 4rem !important;
+        padding-bottom: 2rem !important;
     }
     
     /* 좌/우 컨테이너 스타일링 */
@@ -26,7 +28,7 @@ st.markdown("""
         background-color: #DDEBF7 !important;
         border: 2px solid #5B9BD5 !important;
         border-radius: 12px !important;
-        padding: 10px !important;
+        padding: 15px !important;
     }
 
     /* 폼 요소 스타일 */
@@ -42,6 +44,7 @@ st.markdown("""
         font-weight: bold;
         color: #000000;
         text-align: center;
+        margin-top: 5px;
         margin-bottom: 5px;
     }
     .total-time-display {
@@ -109,8 +112,6 @@ def render_analog_clock(current_sec, max_sec, is_countdown=True):
             ratio = 1.0
 
     cx, cy, r = 100, 100, 85
-    
-    # 12시 방향부터 시계 방향으로 그리도록 각도 산출
     angle = ratio * 360
     rad = math.radians(angle - 90)
     
@@ -119,7 +120,6 @@ def render_analog_clock(current_sec, max_sec, is_countdown=True):
     large_arc_flag = 1 if angle > 180 else 0
 
     if ratio >= 0.9999:
-        # 완전한 원
         path_d = f"M {cx},{cy - r} A {r},{r} 0 1,1 {cx - 0.001},{cy - r} Z"
     elif ratio <= 0.0001:
         path_d = ""
@@ -129,20 +129,16 @@ def render_analog_clock(current_sec, max_sec, is_countdown=True):
     svg_code = f"""
     <div style="display: flex; justify-content: center; align-items: center; margin: 10px 0;">
         <svg width="220" height="220" viewBox="0 0 200 200">
-            <!-- 테두리 -->
             <circle cx="{cx}" cy="{cy}" r="{r + 4}" fill="none" stroke="#D32F2F" stroke-width="4"/>
-            <!-- 시계 배경 (검은색) -->
             <circle cx="{cx}" cy="{cy}" r="{r}" fill="#000000" />
-            <!-- 빨간색 부채꼴 -->
             <path d="{path_d}" fill="#FF0000" />
-            <!-- 시계 중앙 지점 -->
             <circle cx="{cx}" cy="{cy}" r="4" fill="#FFFFFF" />
         </svg>
     </div>
     """
     return svg_code
 
-# 4. 실시간 시간 경과 업데이트 로직 (st.rerun 매 루프마다 호출)
+# 4. 실시간 시간 경과 업데이트 로직
 if st.session_state.is_running:
     now = time.time()
     if st.session_state.last_tick_time is not None:
