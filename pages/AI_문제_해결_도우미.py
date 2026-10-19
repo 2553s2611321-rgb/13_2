@@ -4,8 +4,8 @@ from google.genai import types
 
 # 페이지 기본 설정
 st.set_page_config(
-    page_title="AI 실전 문제 해결 도우미",
-    page_icon="🛠️",
+    page_title="AI 학생 전용 문제 해결 도우미",
+    page_icon="🎒",
     layout="wide"
 )
 
@@ -32,7 +32,7 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("🎯 문제 해결 옵션")
 category = st.sidebar.selectbox(
     "문제 분야 선택",
-    ["🎓 학업/공부 방법", "💼 업무/비즈니스", "💻 IT/기술/코딩", "🛋️ 일상/습관 개선", "🤝 인간관계/소통"]
+    ["📚 내신/수능/시험 대비", "✍️ 공부 습관/시간 관리", "👥 친구 관계/조별 과제", "🧭 진로/생기부/활동", "🛋️ 일상/멘탈 관리"]
 )
 
 response_format = st.sidebar.radio(
@@ -41,75 +41,36 @@ response_format = st.sidebar.radio(
 )
 
 st.sidebar.markdown("---")
-st.sidebar.info("💡 **특징:** 원론적인 정의나 불필요한 설명 없이 바로 실행할 수 있는 '문제 해결책'만 제공합니다.")
+st.sidebar.info("💡 **특징:** 교과서적인 원론이나 뻔한 솔루션 없이, 학생들이 오늘 당장 학교와 책상에서 실행할 수 있는 지침만 제공합니다.")
 
 # 메인 화면 타이틀
-st.title("🛠️ AI 실전 문제 해결 도우미")
-st.caption("더 이상 원론적인 답변은 그만! 지금 당장 시작할 수 있는 실용적인 해결책을 만들어 드립니다.")
+st.title("🎒 AI 학생 전용 문제 해결 도우미")
+st.caption("공부, 시험, 친구 관계, 조별 과제까지! 지금 당장 행동으로 옮길 수 있는 실전 솔루션을 알려드립니다.")
 
-# 빠른 예시 버튼 기능 (session_state 활용)
-st.markdown("##### 💡 빠른 질문 예시 (클릭 시 자동 입력)")
+# 학생 맞춤형 빠른 예시 버튼 (session_state 활용)
+st.markdown("##### 💡 학생 맞춤형 고민 예시 (클릭 시 자동 입력)")
 col1, col2, col3 = st.columns(3)
 
-if col1.button("📚 공부 집중력 문제"):
-    st.session_state["problem_text"] = "공부할 때 10분만 지나면 집중력이 흐려지고 딴짓을 하게 됩니다. 당장 오늘 적용할 수 있는 공부법을 알려주세요."
+if col1.button("📱 시험 기간 폰 중독"):
+    st.session_state["problem_text"] = "시험 기간인데 책상에 앉기만 하면 폰을 보고 딴짓을 하게 됩니다. 당장 오늘 스마트폰을 내려놓고 공부에 몰입할 수 있는 환경 설정과 행동법을 알려주세요."
 
-if col2.button("⏱️ 업무 우선순위 설정"):
-    st.session_state["problem_text"] = "할 일이 너무 많아서 무엇부터 시작해야 할지 모르겠습니다. 효율적인 우선순위 정리 솔루션이 필요해요."
+if col2.button("⚡ 시험 D-3 벼락치기"):
+    st.session_state["problem_text"] = "시험이 3일밖에 안 남았는데 공부할 양이 너무 많아서 막막합니다. 지금 당장 어떤 순서로 무엇부터 외우고 공부해야 할지 벼락치기 우선순위 전략을 짜주세요."
 
-if col3.button("💬 어색한 동료와 대화"):
-    st.session_state["problem_text"] = "새로 들어온 팀원과 어색한 사이를 풀고 자연스럽게 대화를 시작하고 싶습니다."
+if col3.button("👥 조별 과제 무임승차 대처"):
+    st.session_state["problem_text"] = "조별 과제에서 아무것도 안 하는 조원이 있습니다. 감정적으로 싸우지 않고 역할을 나누어 과제를 완성할 수 있는 가이드를 알려주세요."
 
 # 입력 폼
 with st.form(key="problem_form"):
     problem_input = st.text_area(
         "겪고 계신 문제나 고민을 자세히 적어주세요:",
         value=st.session_state["problem_text"],
-        placeholder="예: 시험 기간인데 공부가 손에 안 잡히고 딴짓만 하게 돼요. 당장 실행할 수 있는 방법을 알려주세요.",
+        placeholder="예: 수행평가 제출이 내일인데 주제 잡기가 너무 힘들어요. 오늘 저녁 안에 완성할 수 있는 단계별 방법을 알려주세요.",
         height=130
     )
     submit_button = st.form_submit_button(label="🚀 실행 가능한 해결책 받기", use_container_width=True)
 
-# 프롬프트 엔지니어링 (문제 해결 중심)
+# 프롬프트 엔지니어링 (학생 및 문제 해결 중심)
 SYSTEM_INSTRUCTION = f"""
-너는 최고의 '문제 해결 전문 컨설턴트'이다.
-너의 유일한 목적은 사용자가 제출한 문제에 대해 백과사전식 정의, 불필요한 원론적/법률적 지식, 당위적 설명(예: '공부는 중요합니다' 등)을 완전히 배제하고, **지금 당장 실행할 수 있는 실전 솔루션**을 제시하는 것이다.
-
-[답변 규칙]
-1. 사전에 나올 법한 원론적인 설명이나 불필요한 인사를 절대 포함하지 말 것.
-2. 해결책은 반드시 **구체적인 행동 지침(Actionable Steps)** 중심으로 구성할 것.
-3. 선택된 분야({category})와 요청 스타일({response_format})에 맞춰 깔끔하게 마크다운으로 작성할 것.
-4. 오늘 당장 5분 안에 시작할 수 있는 **첫 번째 행동(Small Win)**을 반드시 하단에 포함할 것.
-"""
-
-if submit_button:
-    if not api_key_to_use:
-        st.error("⚠️ Gemini API Key가 설정되지 않았습니다. 사이드바에 API Key를 입력하거나 Secrets를 등록해 주세요.")
-    elif not problem_input.strip():
-        st.warning("⚠️ 해결하고 싶은 문제 내용을 입력해 주세요.")
-    else:
-        with st.spinner("🔍 분석 중... 문제 해결 솔루션을 생성하고 있습니다."):
-            try:
-                # Gemini 클라이언트 초기화
-                client = genai.Client(api_key=api_key_to_use)
-                
-                # API 호출 (gemini-3.5-flash-lite)
-                response = client.models.generate_content(
-                    model="gemini-3.5-flash-lite",
-                    contents=f"분야: {category}\n요청 스타일: {response_format}\n\n[사용자의 문제]\n{problem_input}",
-                    config=types.GenerateContentConfig(
-                        system_instruction=SYSTEM_INSTRUCTION,
-                        temperature=0.3
-                    )
-                )
-                
-                st.success("✨ 해결 솔루션 생성이 완료되었습니다!")
-                
-                # 결과 출력
-                st.markdown("### 🎯 맞춤형 문제 해결 솔루션")
-                st.markdown("---")
-                st.markdown(response.text)
-                    
-            except Exception as e:
-                st.error(f"❌ API 호출 중 오류가 발생했습니다: {str(e)}")
-                st.info("💡 API Key가 올바른지, Google AI Studio에서 키 권한 및 제한을 확인해 주세요.")
+너는 학생들을 돕는 최고의 '학생 전용 문제 해결 컨설턴트'이다.
+너의 유일한 목적은 학생이 제출한 문제에 대해 원론적이고 진부한 조언(예: '공
