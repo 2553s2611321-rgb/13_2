@@ -2,122 +2,109 @@ import streamlit as st
 from google import genai
 from google.genai import types
 
-# 1. 페이지 기본 설정
+# 페이지 기본 설정
 st.set_page_config(
-    page_title="AI 문제 해결 도우미",
-    page_icon="💡",
+    page_title="AI 실전 문제 해결 도우미",
+    page_icon="🛠️",
     layout="wide"
 )
 
-# 2. API 키 불러오기 (Secrets 우선, 없으면 사이드바 입력 사용)
-api_key = ""
-try:
-    if "GEMINI_API_KEY" in st.secrets:
-        api_key = st.secrets["GEMINI_API_KEY"]
-except Exception:
-    pass
+# 사이드바 - API Key 및 옵션 설정
+st.sidebar.title("⚙️ 설정 및 API Key")
 
-# 3. 사이드바 구성
-with st.sidebar:
-    st.title("⚙️ 설정 및 도구")
-    
-    # Secrets 키가 없을 경우 수동 입력창 제공
-    if not api_key:
-        api_key = st.text_input(
-            "Gemini API Key", 
-            type="password", 
-            help="Secrets 설정이 되어있지 않다면 직접 입력하세요."
-        )
-    else:
-        st.success("🔑 Secrets에서 API Key를 정상적으로 불러왔습니다.")
+# Secrets 또는 직접 입력에서 API Key 가져오기
+gemini_api_key = st.secrets.get("GEMINI_API_KEY", "")
 
-    st.divider()
-    
-    # 카테고리 선택
-    category = st.selectbox(
-        "🎯 문제 카테고리 선택",
-        ["일반 / 기타", "코딩 및 개발 오류", "비즈니스 및 업무 기획", "일상 및 생산성", "학업 및 연구"]
+user_api_key = st.sidebar.text_input(
+    "Gemini API Key 입력",
+    value=gemini_api_key,
+    type="password",
+    help="Secrets에 등록되어 있지 않은 경우 여기에 API 키를 직접 입력하세요."
+)
+
+api_key_to_use = user_api_key if user_api_key else gemini_api_key
+
+st.sidebar.markdown("---")
+st.sidebar.subheader("🎯 문제 해결 옵션")
+category = st.sidebar.selectbox(
+    "문제 분야 선택",
+    ["🎓 학업/공부 방법", "💼 업무/비즈니스", "💻 IT/기술/코딩", "🛋️ 일상/습관 개선", "🤝 인간관계/소통"]
+)
+
+response_format = st.sidebar.radio(
+    "답변 스타일",
+    ["📋 4단계 실천 가이드", "⚡ 3줄 요약 핵심 해결책", "🛠️ 실행 체크리스트 포맷"]
+)
+
+st.sidebar.markdown("---")
+st.sidebar.info("💡 **특징:** 원론적인 정의나 불필요한 설명 없이 바로 실행할 수 있는 '문제 해결책'만 제공합니다.")
+
+# 메인 화면 타이틀
+st.title("🛠️ AI 실전 문제 해결 도우미")
+st.caption("더 이상 원론적인 답변은 그만! 지금 당장 시작할 수 있는 실용적인 해결책을 만들어 드립니다.")
+
+# 빠른 예시 버튼
+st.markdown("##### 💡 빠른 질문 예시 (클릭 시 자동 입력)")
+col1, col2, col3 = st.columns(3)
+
+example_prompt = ""
+if col1.button("📚 공부할 때 집중력이 떨어져요"):
+    example_prompt = "공부할 때 10분만 지나면 집중력이 흐려지고 딴짓을 하게 됩니다. 당장 오늘 적용할 수 있는 공부법을 알려주세요."
+if col2.button("⏱️ 업무 우선순위 정하기가 어려워요"):
+    example_prompt = "할 일이 너무 많아서 무엇부터 시작해야 할지 모르겠습니다. 효율적인 우선순위 정리 솔루션이 필요해요."
+if col3.button("💬 어색한 동료와 대화 트는 법"):
+    example_prompt = "새로 들어온 팀원과 어색한 사이를 풀고 자연스럽게 대화를 시작하고 싶습니다."
+
+# 입력 폼
+with st.form(key="problem_form"):
+    problem_input = st.text_area(
+        "겪고 계신 문제나 고민을 자세히 적어주세요:",
+        value=example_prompt if example_prompt else "",
+        placeholder="예: 시험 기간인데 공부가 손에 안 잡히고 딴짓만 하게 돼요. 당장 실행할 수 있는 방법을 알려주세요.",
+        height=130
     )
-    
-    st.divider()
-    
-    # 대화 내용 초기화 버튼
-    if st.button("🔄 대화 초기화", use_container_width=True):
-        st.session_state.messages = []
-        st.rerun()
+    submit_button = st.form_submit_button(label="🚀 실행 가능한 해결책 받기", use_container_width=True)
 
-# 4. 세션 상태 초기화 (메시지 저장용)
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# 5. 메인 화면 타이틀 및 안내
-st.title("💡 AI 문제 해결 도우미")
-st.caption("해결하고자 하는 문제나 에러 내용을 작성해 주세요. 핵심 분석부터 단계별 해결 방안을 제안합니다.")
-
-# 6. 문제 해결 중심 시스템 프롬프트 정의
+# 프롬프트 엔지니어링 (문제 해결 중심)
 SYSTEM_INSTRUCTION = f"""
-당신은 최고의 'AI 문제 해결 전문 컨설턴트'입니다.
-현재 사용자가 선택한 문제 카테고리: [{category}]
+너는 최고의 '문제 해결 전문 컨설턴트'이다.
+너의 유일한 목적은 사용자가 제출한 문제에 대해 백과사전식 정의, 불필요한 원론적/법률적 지식, 당위적 설명(예: '공부는 중요합니다' 등)을 완전히 배제하고, **지금 당장 실행할 수 있는 실전 솔루션**을 제시하는 것이다.
 
-답변을 작성할 때 반드시 아래의 3단계 문제 해결 프레임워크를 준수하세요:
-
-1. **[1단계] 문제 원인 분석**
-   - 질문의 핵심 이슈와 발생 원인을 명확하게 요약 및 진단합니다.
-
-2. **[2단계] 단계별 실행 솔루션 (Step-by-Step)**
-   - 문제 해결을 위해 당장 실행해야 할 액션 플랜을 순서대로 제시합니다.
-   - 코드, 명령어, 구체적인 예시나 프로세스를 포함하여 바로 적용 가능하게 작성하세요.
-
-3. **[3단계] 재발 방지 및 추가 팁**
-   - 동일한 문제가 재발하지 않도록 예방하는 법이나 추가로 고려할 유용한 조언을 제공합니다.
-
-명확하고 전문적이며 실행 중심의 친절한 어조를 유지하세요.
+[답변 규칙]
+1. 사전에 나올 법한 원론적인 설명이나 불필요한 인사를 절대 포함하지 말 것.
+2. 해결책은 반드시 **구체적인 행동 지침(Actionable Steps)** 중심으로 구성할 것.
+3. 선택된 분야({category})와 요청 스타일({response_format})에 맞춰 깔끔하게 마크다운으로 작성할 것.
+4. 오늘 당장 5분 안에 시작할 수 있는 **첫 번째 행동(Small Win)**을 반드시 하단에 포함할 것.
 """
 
-# 7. 대화 이력 출력
-for message in st.session_state.messages:
-    with st.chat_message(message["role"]):
-        st.markdown(message["content"])
-
-# 8. 사용자 입력 및 AI 처리
-if prompt := st.chat_input("해결할 문제나 에러 메시지를 입력하세요..."):
-    # API 키 검증
-    if not api_key or api_key.strip() == "":
-        st.error("⚠️ Gemini API Key가 필요합니다. 사이드바에 입력하거나 Streamlit Secrets에 등록해 주세요.")
+if submit_button:
+    if not api_key_to_use:
+        st.error("⚠️ Gemini API Key가 설정되지 않았습니다. 사이드바에 API Key를 입력하거나 Secrets를 등록해 주세요.")
+    elif not problem_input.strip():
+        st.warning("⚠️ 해결하고 싶은 문제 내용을 입력해 주세요.")
     else:
-        # 사용자 메시지 화면 표시 및 저장
-        st.session_state.messages.append({"role": "user", "content": prompt})
-        with st.chat_message("user"):
-            st.markdown(prompt)
-
-        # AI 응답 생성
-        with st.chat_message("assistant"):
-            with st.spinner("문제를 분석하여 최적의 해결책을 수립 중입니다..."):
-                try:
-                    # Google GenAI 클라이언트 생성
-                    client = genai.Client(api_key=api_key)
-                    
-                    # 메시지 대화 이력 구성
-                    contents = []
-                    for msg in st.session_state.messages:
-                        role = "user" if msg["role"] == "user" else "model"
-                        contents.append(types.Content(role=role, parts=[types.Part.from_text(text=msg["content"])]))
-
-                    # 모델 호출 (gemini-2.5-flash-lite)
-                    response = client.models.generate_content(
-                        model="gemini-2.5-flash-lite",
-                        contents=contents,
-                        config=types.GenerateContentConfig(
-                            system_instruction=SYSTEM_INSTRUCTION,
-                            temperature=0.2,
-                        )
+        with st.spinner("🔍 분석 중... 문제 해결 솔루션을 생성하고 있습니다."):
+            try:
+                # Gemini 클라이언트 초기화
+                client = genai.Client(api_key=api_key_to_use)
+                
+                # API 호출 (gemini-2.5-flash-lite)
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash-lite",
+                    contents=f"분야: {category}\n요청 스타일: {response_format}\n\n[사용자의 문제]\n{problem_input}",
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_INSTRUCTION,
+                        temperature=0.3
                     )
-
-                    answer = response.text
-                    st.markdown(answer)
+                )
+                
+                st.success("✨ 해결 솔루션 생성이 완료되었습니다!")
+                
+                # 결과 출력
+                st.markdown("### 🎯 맞춤형 문제 해결 솔루션")
+                st.markdown("---")
+                st.markdown(response.text)
                     
-                    # 응답 저장
-                    st.session_state.messages.append({"role": "assistant", "content": answer})
-
-                except Exception as e:
-                    st.error(f"❌ API 호출 중 오류가 발생했습니다: {str(e)}")
+            except Exception as e:
+                st.error(f"❌ API 호출 중 오류가 발생했습니다: {str(e)}")
+                st.info("💡 API Key가 올바른지, Google AI Studio에서 키 권한 및 제한을 확인해 주세요.")
