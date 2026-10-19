@@ -4,7 +4,7 @@ from google.genai import types
 
 # 페이지 기본 설정
 st.set_page_config(
-    page_title="AI 학생 전용 문제 해결 도우미",
+    page_title="AI 문제 해결 도우미",
     page_icon="🎒",
     layout="wide"
 )
