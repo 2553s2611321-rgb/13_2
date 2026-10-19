@@ -88,9 +88,9 @@ if submit_button:
                 # Gemini 클라이언트 초기화
                 client = genai.Client(api_key=api_key_to_use)
                 
-                # API 호출 (gemini-2.5-flash-lite)
+                # 최신 지원 모델(gemini-3.5-flash-lite)로 변경 적용
                 response = client.models.generate_content(
-                    model="gemini-2.5-flash-lite",
+                    model="gemini-3.5-flash-lite",
                     contents=f"분야: {category}\n요청 스타일: {response_format}\n\n[사용자의 문제]\n{problem_input}",
                     config=types.GenerateContentConfig(
                         system_instruction=SYSTEM_INSTRUCTION,
