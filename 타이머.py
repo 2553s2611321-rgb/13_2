@@ -9,40 +9,64 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS로 레이아웃 및 박스 디자인 적용
+# Custom CSS - 중앙 정렬 및 하늘색 네모 상자 스타일 강화
 st.markdown("""
     <style>
     .stApp {
-        background-color: #F8F9FA;
+        background-color: #FFFFFF;
     }
     .block-container {
         padding-top: 1.5rem;
         padding-bottom: 1.5rem;
     }
-    .panel-box {
-        background-color: #DDEBF7;
-        border: 2px solid #5B9BD5;
-        border-radius: 8px;
-        padding: 18px;
-        min-height: 520px;
+    
+    /* 하늘색 네모 상자 (공부 리스트 & 과목별 공부 시간) */
+    .sky-box {
+        background-color: #DDEBF7 !important;
+        border: 2px solid #5B9BD5 !important;
+        border-radius: 8px !important;
+        padding: 20px !important;
+        min-height: 540px !important;
+        box-sizing: border-box;
     }
+    
+    /* 중앙 영역 스타일 */
     .center-panel {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
         text-align: center;
-        padding: 10px;
     }
     .total-title {
         font-size: 1.8rem;
         font-weight: bold;
-        color: #222222;
+        color: #000000;
+        text-align: center;
         margin-bottom: 5px;
     }
-    .digital-clock {
+    .total-time-display {
         font-size: 2.2rem;
         font-weight: bold;
-        color: #111111;
-        margin-top: 10px;
-        font-family: monospace;
+        color: #1E88E5;
+        text-align: center;
+        margin-bottom: 15px;
     }
+    
+    /* 가운데 정렬 디지털 시계 */
+    .digital-clock {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: #111111;
+        text-align: center !important;
+        margin-top: 10px;
+        margin-bottom: 15px;
+        font-family: 'Courier New', Courier, monospace, sans-serif;
+        width: 100%;
+        display: block;
+    }
+    
+    /* 버튼 스타일 */
     .stButton>button {
         width: 100%;
         border-radius: 6px;
@@ -113,7 +137,7 @@ def render_analog_clock(current_sec, max_sec, is_countdown=True):
         path_d = f"M {cx},{cy} L {cx},{cy - r} A {r},{r} 0 {large_arc_flag},1 {x},{y} Z"
 
     svg_code = f"""
-    <div style="display: flex; justify-content: center; align-items: center; margin: 15px 0;">
+    <div style="display: flex; justify-content: center; align-items: center; margin: 10px 0; width: 100%;">
         <svg width="220" height="220" viewBox="0 0 200 200">
             <!-- 시계 빨간 테두리 -->
             <circle cx="{cx}" cy="{cy}" r="{r + 4}" fill="none" stroke="#D32F2F" stroke-width="4"/>
@@ -132,13 +156,13 @@ def render_analog_clock(current_sec, max_sec, is_countdown=True):
 col_left, col_center, col_right = st.columns([1, 1.2, 1])
 
 # ==========================================
-# [좌측] 공부 리스트 Box
+# [좌측] 공부 리스트 (하늘색 네모 상자)
 # ==========================================
 with col_left:
-    st.markdown('<div class="panel-box">', unsafe_allow_html=True)
-    st.subheader("공부 리스트")
+    st.markdown('<div class="sky-box">', unsafe_allow_html=True)
+    st.markdown("<h3 style='margin-top:0; color:#000000; font-weight:bold;'>공부 리스트</h3>", unsafe_allow_html=True)
     
-    # 과목 및 할 일 추가
+    # 과목 및 할 일 추가 폼
     with st.form("task_form", clear_on_submit=True):
         f_subject = st.text_input("과목명", placeholder="예: 국어")
         f_task = st.text_input("할 일", placeholder="예: 비문학 3지문 풀기")
@@ -150,7 +174,7 @@ with col_left:
                     st.session_state.subject_times[sub] = 0
                 st.rerun()
 
-    st.markdown("---")
+    st.markdown("<hr style='border:1px solid #B0C4DE;'>", unsafe_allow_html=True)
     
     # 측정할 과목 선택
     sub_list = list(st.session_state.subject_times.keys())
@@ -172,7 +196,7 @@ with col_center:
     # 상단: 총 공부 시간
     st.markdown('<div class="total-title">총 공부 시간</div>', unsafe_allow_html=True)
     total_time_place = st.empty()
-    total_time_place.markdown(f"<h2 style='color:#1E88E5;'>{format_hhmmss(st.session_state.total_study_sec)}</h2>", unsafe_allow_html=True)
+    total_time_place.markdown(f'<div class="total-time-display">{format_hhmmss(st.session_state.total_study_sec)}</div>', unsafe_allow_html=True)
 
     # 기능 선택 (뽀모도로 vs 공부시간 측정)
     selected_mode = st.radio(
@@ -191,7 +215,7 @@ with col_center:
                 st.session_state.pomo_target_min = p_min
                 st.session_state.pomo_current_sec = p_min * 60
 
-    # 시계 SVG placeholder
+    # 시계 SVG 및 디지털 시간 정렬을 위한 공간
     clock_place = st.empty()
     digital_place = st.empty()
 
@@ -210,7 +234,7 @@ with col_center:
             st.session_state.stopwatch_sec = 0
             st.rerun()
 
-    # 초기 화면 시계 렌더링
+    # 초기 화면 렌더링
     if st.session_state.mode == "뽀모도로 타이머":
         clock_place.markdown(render_analog_clock(st.session_state.pomo_current_sec, st.session_state.pomo_target_min * 60, True), unsafe_allow_html=True)
         digital_place.markdown(f'<div class="digital-clock">{format_hhmmss(st.session_state.pomo_current_sec)}</div>', unsafe_allow_html=True)
@@ -221,11 +245,11 @@ with col_center:
     st.markdown('</div>', unsafe_allow_html=True)
 
 # ==========================================
-# [우측] 과목별 공부 시간 Box
+# [우측] 과목별 공부 시간 (하늘색 네모 상자)
 # ==========================================
 with col_right:
-    st.markdown('<div class="panel-box">', unsafe_allow_html=True)
-    st.subheader("과목별 공부 시간")
+    st.markdown('<div class="sky-box">', unsafe_allow_html=True)
+    st.markdown("<h3 style='margin-top:0; color:#000000; font-weight:bold;'>과목별 공부 시간</h3>", unsafe_allow_html=True)
     
     subject_place = st.empty()
     
@@ -233,8 +257,7 @@ with col_right:
         with subject_place.container():
             for sub, sec in st.session_state.subject_times.items():
                 st.write(f"**{sub}**: {format_hhmmss(sec)}")
-                # 진행 바 시각화 (최대 3시간 기준)
-                progress_val = min(1.0, sec / 10800)
+                progress_val = min(1.0, sec / 10800)  # 최대 3시간 기준 프로그레스 바
                 st.progress(progress_val)
 
     update_subject_display()
@@ -261,7 +284,7 @@ if st.session_state.is_running:
                 st.balloons()
                 st.success("뽀모도로 시간이 완료되었습니다!")
                 
-            # 시계 & 디지털 타임 갱신
+            # 시계 & 정중앙 디지털 시간 갱신
             clock_place.markdown(render_analog_clock(st.session_state.pomo_current_sec, st.session_state.pomo_target_min * 60, True), unsafe_allow_html=True)
             digital_place.markdown(f'<div class="digital-clock">{format_hhmmss(st.session_state.pomo_current_sec)}</div>', unsafe_allow_html=True)
             
@@ -271,7 +294,7 @@ if st.session_state.is_running:
             digital_place.markdown(f'<div class="digital-clock">{format_hhmmss(st.session_state.stopwatch_sec)}</div>', unsafe_allow_html=True)
 
         # 총 시간 & 과목별 시간 화면 갱신
-        total_time_place.markdown(f"<h2 style='color:#1E88E5;'>{format_hhmmss(st.session_state.total_study_sec)}</h2>", unsafe_allow_html=True)
+        total_time_place.markdown(f'<div class="total-time-display">{format_hhmmss(st.session_state.total_study_sec)}</div>', unsafe_allow_html=True)
         update_subject_display()
 
         if not st.session_state.is_running:
