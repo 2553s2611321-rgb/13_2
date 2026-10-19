@@ -9,6 +9,10 @@ st.set_page_config(
     layout="wide"
 )
 
+# 세션 상태(Session State) 초기화
+if "problem_text" not in st.session_state:
+    st.session_state["problem_text"] = ""
+
 # 사이드바 - API Key 및 옵션 설정
 st.sidebar.title("⚙️ 설정 및 API Key")
 
@@ -43,23 +47,24 @@ st.sidebar.info("💡 **특징:** 원론적인 정의나 불필요한 설명 없
 st.title("🛠️ AI 실전 문제 해결 도우미")
 st.caption("더 이상 원론적인 답변은 그만! 지금 당장 시작할 수 있는 실용적인 해결책을 만들어 드립니다.")
 
-# 빠른 예시 버튼
+# 빠른 예시 버튼 기능 (session_state 활용)
 st.markdown("##### 💡 빠른 질문 예시 (클릭 시 자동 입력)")
 col1, col2, col3 = st.columns(3)
 
-example_prompt = ""
-if col1.button("📚 공부할 때 집중력이 떨어져요"):
-    example_prompt = "공부할 때 10분만 지나면 집중력이 흐려지고 딴짓을 하게 됩니다. 당장 오늘 적용할 수 있는 공부법을 알려주세요."
-if col2.button("⏱️ 업무 우선순위 정하기가 어려워요"):
-    example_prompt = "할 일이 너무 많아서 무엇부터 시작해야 할지 모르겠습니다. 효율적인 우선순위 정리 솔루션이 필요해요."
-if col3.button("💬 어색한 동료와 대화 트는 법"):
-    example_prompt = "새로 들어온 팀원과 어색한 사이를 풀고 자연스럽게 대화를 시작하고 싶습니다."
+if col1.button("📚 공부 집중력 문제"):
+    st.session_state["problem_text"] = "공부할 때 10분만 지나면 집중력이 흐려지고 딴짓을 하게 됩니다. 당장 오늘 적용할 수 있는 공부법을 알려주세요."
+
+if col2.button("⏱️ 업무 우선순위 설정"):
+    st.session_state["problem_text"] = "할 일이 너무 많아서 무엇부터 시작해야 할지 모르겠습니다. 효율적인 우선순위 정리 솔루션이 필요해요."
+
+if col3.button("💬 어색한 동료와 대화"):
+    st.session_state["problem_text"] = "새로 들어온 팀원과 어색한 사이를 풀고 자연스럽게 대화를 시작하고 싶습니다."
 
 # 입력 폼
 with st.form(key="problem_form"):
     problem_input = st.text_area(
         "겪고 계신 문제나 고민을 자세히 적어주세요:",
-        value=example_prompt if example_prompt else "",
+        value=st.session_state["problem_text"],
         placeholder="예: 시험 기간인데 공부가 손에 안 잡히고 딴짓만 하게 돼요. 당장 실행할 수 있는 방법을 알려주세요.",
         height=130
     )
@@ -88,7 +93,7 @@ if submit_button:
                 # Gemini 클라이언트 초기화
                 client = genai.Client(api_key=api_key_to_use)
                 
-                # 최신 지원 모델(gemini-3.5-flash-lite)로 변경 적용
+                # API 호출 (gemini-3.5-flash-lite)
                 response = client.models.generate_content(
                     model="gemini-3.5-flash-lite",
                     contents=f"분야: {category}\n요청 스타일: {response_format}\n\n[사용자의 문제]\n{problem_input}",
