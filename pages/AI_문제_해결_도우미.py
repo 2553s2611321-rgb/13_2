@@ -48,7 +48,7 @@ st.title("AI 문제 해결 도우미")
 st.caption("공부, 시험, 친구 관계, 조별 과제까지! 지금 당장 행동으로 옮길 수 있는 실전 솔루션을 알려드립니다.")
 
 # 학생 맞춤형 빠른 예시 버튼 (session_state 활용)
-st.markdown("##### 💡 학생 맞춤형 고민 예시 (클릭 시 자동 입력)")
+st.markdown("##### 학생 맞춤형 고민 예시 (클릭 시 자동 입력)")
 col1, col2, col3 = st.columns(3)
 
 if col1.button("📱 시험 기간 폰 중독"):
@@ -68,7 +68,7 @@ with st.form(key="problem_form"):
         placeholder="예: 수행평가 제출이 내일인데 주제 잡기가 너무 힘들어요. 오늘 저녁 안에 완성할 수 있는 단계별 방법을 알려주세요.",
         height=130
     )
-    submit_button = st.form_submit_button(label="🚀 실행 가능한 해결책 받기", use_container_width=True)
+    submit_button = st.form_submit_button(label="실행 가능한 해결책 받기", use_container_width=True)
 
 # 프롬프트 엔지니어링 (학생 및 문제 해결 중심)
 SYSTEM_INSTRUCTION = f"""
@@ -103,7 +103,7 @@ if submit_button:
                     )
                 )
                 
-                st.success("✨ 해결 솔루션 생성이 완료되었습니다!")
+                st.success("해결 솔루션 생성이 완료되었습니다!")
                 
                 # 결과 출력
                 st.markdown("### 🎯 맞춤형 문제 해결 솔루션")
