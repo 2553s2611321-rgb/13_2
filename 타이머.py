@@ -1,213 +1,278 @@
 import streamlit as st
 import time
-import datetime
+import math
 
-# 1. 페이지 기본 설정
+# 1. 기본 페이지 설정
 st.set_page_config(
-    page_title="뽀모도로 학습 도우미",
+    page_title="학습 도우미 시계",
     page_icon="⏱️",
-    layout="centered"
+    layout="wide"
 )
 
-# Custom CSS로 UI 개선
+# Custom CSS로 레이아웃 및 박스 디자인 적용
 st.markdown("""
     <style>
-    .main-title {
-        text-align: center;
-        color: #FF4B4B;
-        font-size: 2.3rem;
-        font-weight: bold;
-        margin-bottom: 0.5rem;
+    .stApp {
+        background-color: #F8F9FA;
     }
-    .sub-title {
+    .block-container {
+        padding-top: 1.5rem;
+        padding-bottom: 1.5rem;
+    }
+    .panel-box {
+        background-color: #DDEBF7;
+        border: 2px solid #5B9BD5;
+        border-radius: 8px;
+        padding: 18px;
+        min-height: 520px;
+    }
+    .center-panel {
         text-align: center;
-        color: #555;
-        font-size: 1.1rem;
-        margin-bottom: 2rem;
+        padding: 10px;
+    }
+    .total-title {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: #222222;
+        margin-bottom: 5px;
+    }
+    .digital-clock {
+        font-size: 2.2rem;
+        font-weight: bold;
+        color: #111111;
+        margin-top: 10px;
+        font-family: monospace;
     }
     .stButton>button {
         width: 100%;
-        border-radius: 8px;
-        height: 3em;
+        border-radius: 6px;
         font-weight: bold;
     }
     </style>
 """, unsafe_allow_html=True)
 
-# 2. 세션 상태(Session State) 초기화
-if "work_min" not in st.session_state:
-    st.session_state.work_min = 25
-if "rest_min" not in st.session_state:
-    st.session_state.rest_min = 5
-if "current_time_sec" not in st.session_state:
-    st.session_state.current_time_sec = 25 * 60
-if "total_time_sec" not in st.session_state:
-    st.session_state.total_time_sec = 25 * 60
+# 2. 세션 상태 초기화
+if "tasks" not in st.session_state:
+    st.session_state.tasks = [
+        {"subject": "수학", "task": "수학 문제집 풀기", "completed": False},
+        {"subject": "영어", "task": "영어 단어 암기", "completed": False}
+    ]
+if "subject_times" not in st.session_state:
+    st.session_state.subject_times = {"수학": 0, "영어": 0, "국어": 0, "기타": 0}
+if "total_study_sec" not in st.session_state:
+    st.session_state.total_study_sec = 0
+
+# 타이머 상태
+if "mode" not in st.session_state:
+    st.session_state.mode = "뽀모도로 타이머"  # "뽀모도로 타이머" 또는 "공부 시간 측정"
+if "pomo_target_min" not in st.session_state:
+    st.session_state.pomo_target_min = 25
+if "pomo_current_sec" not in st.session_state:
+    st.session_state.pomo_current_sec = 25 * 60
+if "stopwatch_sec" not in st.session_state:
+    st.session_state.stopwatch_sec = 0
 if "is_running" not in st.session_state:
     st.session_state.is_running = False
-if "mode" not in st.session_state:
-    st.session_state.mode = "집중 모드"  # "집중 모드" 또는 "휴식 모드"
-if "logs" not in st.session_state:
-    st.session_state.logs = []
-if "pomo_count" not in st.session_state:
-    st.session_state.pomo_count = 0
+if "selected_subject" not in st.session_state:
+    st.session_state.selected_subject = "수학"
 
-# 3. SVG 아날로그 뽀모도로 시계 생성 함수
-def render_pomodoro_clock(current_sec, total_sec, mode):
-    progress = 1.0 - (current_sec / total_sec if total_sec > 0 else 0)
-    minutes = current_sec // 60
-    seconds = current_sec % 60
-    time_str = f"{minutes:02d}:{seconds:02d}"
+# 시간 포맷 함수 (초 -> HH:MM:SS)
+def format_hhmmss(seconds):
+    h = seconds // 3600
+    m = (seconds % 3600) // 60
+    s = seconds % 60
+    return f"{h:02d}:{m:02d}:{s:02d}"
 
-    # 모드별 테마 색상 설정
-    if mode == "집중 모드":
-        theme_color = "#FF4B4B" # Red
-        bg_color = "#FFE6E6"
+# 3. 빨간색 아날로그 파이 시계 SVG 생성
+def render_analog_clock(current_sec, max_sec, is_countdown=True):
+    if max_sec <= 0:
+        max_sec = 1
+    
+    if is_countdown:
+        # 카운트다운 (뽀모도로): 남은 비율만큼 빨간색 부채꼴
+        ratio = max(0.0, min(1.0, current_sec / max_sec))
     else:
-        theme_color = "#28A745" # Green
-        bg_color = "#E6F4EA"
+        # 카운트업 (스톱워치): 60분 단위로 차오르는 빨간색 부채꼴
+        ratio = (current_sec % 3600) / 3600.0
+        if ratio == 0 and current_sec > 0:
+            ratio = 1.0
 
-    # SVG 원형 시계 게이지 계산 (원 둘레: 2 * pi * 90 ≈ 565.48)
-    stroke_dashoffset = 565.48 * progress
+    cx, cy, r = 100, 100, 85
+    angle = ratio * 360
+    rad = math.radians(angle - 90)
+    
+    x = cx + r * math.cos(rad)
+    y = cy + r * math.sin(rad)
+    large_arc_flag = 1 if angle > 180 else 0
 
-    svg_html = f"""
-    <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 20px 0;">
-        <svg width="240" height="240" viewBox="0 0 200 200">
-            <!-- 배경 원 -->
-            <circle cx="100" cy="100" r="90" fill="none" stroke="{bg_color}" stroke-width="12"/>
-            <!-- 잔여 시간 원형 게이지 -->
-            <circle cx="100" cy="100" r="90" fill="none" stroke="{theme_color}" stroke-width="12"
-                    stroke-dasharray="565.48" stroke-dashoffset="{stroke_dashoffset}"
-                    stroke-linecap="round" transform="rotate(-90 100 100)" style="transition: stroke-dashoffset 0.5s ease;"/>
-            <!-- 뽀모도로 시계 꼭지 부분 (디자인) -->
-            <rect x="92" y="2" width="16" height="8" rx="3" fill="{theme_color}" />
-            <!-- 디지털 잔여 시간 텍스트 -->
-            <text x="100" y="95" text-anchor="middle" font-size="30" font-weight="bold" fill="#333" font-family="sans-serif">{time_str}</text>
-            <!-- 현재 모드 표시 -->
-            <text x="100" y="125" text-anchor="middle" font-size="14" font-weight="600" fill="{theme_color}" font-family="sans-serif">{mode}</text>
+    if ratio >= 0.9999:
+        path_d = f"M {cx},{cy - r} A {r},{r} 0 1,1 {cx - 0.001},{cy - r} Z"
+    elif ratio <= 0.0001:
+        path_d = ""
+    else:
+        path_d = f"M {cx},{cy} L {cx},{cy - r} A {r},{r} 0 {large_arc_flag},1 {x},{y} Z"
+
+    svg_code = f"""
+    <div style="display: flex; justify-content: center; align-items: center; margin: 15px 0;">
+        <svg width="220" height="220" viewBox="0 0 200 200">
+            <!-- 시계 빨간 테두리 -->
+            <circle cx="{cx}" cy="{cy}" r="{r + 4}" fill="none" stroke="#D32F2F" stroke-width="4"/>
+            <!-- 검은색 배경 -->
+            <circle cx="{cx}" cy="{cy}" r="{r}" fill="#000000" />
+            <!-- 빨간색 부채꼴 파이 -->
+            <path d="{path_d}" fill="#FF0000" />
+            <!-- 시계 중앙 지점 -->
+            <circle cx="{cx}" cy="{cy}" r="3" fill="#FFFFFF" />
         </svg>
     </div>
     """
-    return svg_html
+    return svg_code
 
-# 4. 헤더 영역
-st.markdown('<div class="main-title">⏱️ 뽀모도로 학습 도우미</div>', unsafe_allow_html=True)
-st.markdown('<div class="sub-title">시각적인 아날로그 시계와 함께 집중력을 극대화해보세요!</div>', unsafe_allow_html=True)
+# 4. 3컬럼 레이아웃 구성
+col_left, col_center, col_right = st.columns([1, 1.2, 1])
 
-# 5. 사이드바 - 타이머 설정
-st.sidebar.header("⚙️ 타이머 설정")
-
-preset = st.sidebar.radio("자주 사용하는 타이머", ["25분 집중 / 5분 휴식", "50분 집중 / 10분 휴식", "사용자 지정"])
-
-if preset == "25분 집중 / 5분 휴식":
-    work_input = 25
-    rest_input = 5
-elif preset == "50분 집중 / 10분 휴식":
-    work_input = 50
-    rest_input = 10
-else:
-    work_input = st.sidebar.number_input("집중 시간(분)", min_value=1, max_value=120, value=25)
-    rest_input = st.sidebar.number_input("휴식 시간(분)", min_value=1, max_value=60, value=5)
-
-# 설정 변경 시 타이머 리셋 처리
-if st.sidebar.button("설정 적용 및 타이머 초기화"):
-    st.session_state.work_min = work_input
-    st.session_state.rest_min = rest_input
-    st.session_state.mode = "집중 모드"
-    st.session_state.current_time_sec = work_input * 60
-    st.session_state.total_time_sec = work_input * 60
-    st.session_state.is_running = False
-    st.rerun()
-
-# 6. 메인 콘텐츠 화면
-col1, col2 = st.columns([1, 1])
-
-with col1:
-    task_name = st.text_input("📝 오늘의 학습 목표 / 과제", placeholder="예: 수학 문제집 5페이지 풀기")
-
-    # 아날로그 시계 렌더링을 위한 빈 컨테이너
-    clock_placeholder = st.empty()
-    clock_placeholder.markdown(
-        render_pomodoro_clock(st.session_state.current_time_sec, st.session_state.total_time_sec, st.session_state.mode),
-        unsafe_allow_html=True
-    )
-
-    # 제어 버튼
-    btn_col1, btn_col2, btn_col3 = st.columns(3)
-
-    with btn_col1:
-        if st.button("▶ 시작"):
-            st.session_state.is_running = True
-
-    with btn_col2:
-        if st.button("⏸ 일시정지"):
-            st.session_state.is_running = False
-
-    with btn_col3:
-        if st.button("🔄 리셋"):
-            st.session_state.is_running = False
-            if st.session_state.mode == "집중 모드":
-                st.session_state.current_time_sec = st.session_state.work_min * 60
-                st.session_state.total_time_sec = st.session_state.work_min * 60
-            else:
-                st.session_state.current_time_sec = st.session_state.rest_min * 60
-                st.session_state.total_time_sec = st.session_state.rest_min * 60
-            st.rerun()
-
-with col2:
-    st.subheader("📊 오늘의 학습 현황")
-
-    # 성과 메트릭
-    m_col1, m_col2 = st.columns(2)
-    m_col1.metric("완료한 뽀모도로", f"{st.session_state.pomo_count}개")
-    m_col2.metric("총 집중 시간", f"{st.session_state.pomo_count * st.session_state.work_min}분")
+# ==========================================
+# [좌측] 공부 리스트 Box
+# ==========================================
+with col_left:
+    st.markdown('<div class="panel-box">', unsafe_allow_html=True)
+    st.subheader("공부 리스트")
+    
+    # 과목 및 할 일 추가
+    with st.form("task_form", clear_on_submit=True):
+        f_subject = st.text_input("과목명", placeholder="예: 국어")
+        f_task = st.text_input("할 일", placeholder="예: 비문학 3지문 풀기")
+        if st.form_submit_button("추가"):
+            if f_task:
+                sub = f_subject.strip() if f_subject.strip() else "기타"
+                st.session_state.tasks.append({"subject": sub, "task": f_task, "completed": False})
+                if sub not in st.session_state.subject_times:
+                    st.session_state.subject_times[sub] = 0
+                st.rerun()
 
     st.markdown("---")
-    st.write("📋 **학습 기록 (Timelog)**")
+    
+    # 측정할 과목 선택
+    sub_list = list(st.session_state.subject_times.keys())
+    st.session_state.selected_subject = st.selectbox("현재 학습 과목", sub_list)
 
-    if st.session_state.logs:
-        for log in reversed(st.session_state.logs):
-            st.caption(f"• **[{log['time']}]** {log['task']} ({log['mode']})")
+    st.write("**할 일 목록**")
+    for i, t in enumerate(st.session_state.tasks):
+        chk = st.checkbox(f"[{t['subject']}] {t['task']}", value=t["completed"], key=f"t_{i}")
+        st.session_state.tasks[i]["completed"] = chk
+
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ==========================================
+# [중앙] 총 공부 시간 & 타이머/스톱워치
+# ==========================================
+with col_center:
+    st.markdown('<div class="center-panel">', unsafe_allow_html=True)
+    
+    # 상단: 총 공부 시간
+    st.markdown('<div class="total-title">총 공부 시간</div>', unsafe_allow_html=True)
+    total_time_place = st.empty()
+    total_time_place.markdown(f"<h2 style='color:#1E88E5;'>{format_hhmmss(st.session_state.total_study_sec)}</h2>", unsafe_allow_html=True)
+
+    # 기능 선택 (뽀모도로 vs 공부시간 측정)
+    selected_mode = st.radio(
+        "시계 기능 선택",
+        ["뽀모도로 타이머", "공부 시간 측정"],
+        horizontal=True,
+        disabled=st.session_state.is_running
+    )
+    st.session_state.mode = selected_mode
+
+    # 뽀모도로 모드일 때 목표 시간 설정
+    if st.session_state.mode == "뽀모도로 타이머":
+        if not st.session_state.is_running:
+            p_min = st.number_input("뽀모도로 설정(분)", min_value=1, max_value=120, value=st.session_state.pomo_target_min, step=5)
+            if p_min != st.session_state.pomo_target_min:
+                st.session_state.pomo_target_min = p_min
+                st.session_state.pomo_current_sec = p_min * 60
+
+    # 시계 SVG placeholder
+    clock_place = st.empty()
+    digital_place = st.empty()
+
+    # 제어 버튼
+    b_col1, b_col2, b_col3 = st.columns(3)
+    with b_col1:
+        if st.button("시작"):
+            st.session_state.is_running = True
+    with b_col2:
+        if st.button("일시정지"):
+            st.session_state.is_running = False
+    with b_col3:
+        if st.button("리셋"):
+            st.session_state.is_running = False
+            st.session_state.pomo_current_sec = st.session_state.pomo_target_min * 60
+            st.session_state.stopwatch_sec = 0
+            st.rerun()
+
+    # 초기 화면 시계 렌더링
+    if st.session_state.mode == "뽀모도로 타이머":
+        clock_place.markdown(render_analog_clock(st.session_state.pomo_current_sec, st.session_state.pomo_target_min * 60, True), unsafe_allow_html=True)
+        digital_place.markdown(f'<div class="digital-clock">{format_hhmmss(st.session_state.pomo_current_sec)}</div>', unsafe_allow_html=True)
     else:
-        st.info("타이머를 완료하면 기록이 자동으로 쌓입니다.")
+        clock_place.markdown(render_analog_clock(st.session_state.stopwatch_sec, 3600, False), unsafe_allow_html=True)
+        digital_place.markdown(f'<div class="digital-clock">{format_hhmmss(st.session_state.stopwatch_sec)}</div>', unsafe_allow_html=True)
 
-# 7. 타이머 루프 실행 로직 (안정적인 실시간 갱신)
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ==========================================
+# [우측] 과목별 공부 시간 Box
+# ==========================================
+with col_right:
+    st.markdown('<div class="panel-box">', unsafe_allow_html=True)
+    st.subheader("과목별 공부 시간")
+    
+    subject_place = st.empty()
+    
+    def update_subject_display():
+        with subject_place.container():
+            for sub, sec in st.session_state.subject_times.items():
+                st.write(f"**{sub}**: {format_hhmmss(sec)}")
+                # 진행 바 시각화 (최대 3시간 기준)
+                progress_val = min(1.0, sec / 10800)
+                st.progress(progress_val)
+
+    update_subject_display()
+    st.markdown('</div>', unsafe_allow_html=True)
+
+# ==========================================
+# 실시간 타이머 동작 루프 (1초 단위)
+# ==========================================
 if st.session_state.is_running:
-    while st.session_state.current_time_sec > 0 and st.session_state.is_running:
+    while st.session_state.is_running:
         time.sleep(1)
-        st.session_state.current_time_sec -= 1
+        cur_sub = st.session_state.selected_subject
+        
+        # 총 공부 시간 및 과목별 시간 누적 증가
+        st.session_state.total_study_sec += 1
+        st.session_state.subject_times[cur_sub] = st.session_state.subject_times.get(cur_sub, 0) + 1
 
-        # 시계 UI 업데이트
-        clock_placeholder.markdown(
-            render_pomodoro_clock(st.session_state.current_time_sec, st.session_state.total_time_sec, st.session_state.mode),
-            unsafe_allow_html=True
-        )
+        # 모드별 처리
+        if st.session_state.mode == "뽀모도로 타이머":
+            if st.session_state.pomo_current_sec > 0:
+                st.session_state.pomo_current_sec -= 1
+            else:
+                st.session_state.is_running = False
+                st.balloons()
+                st.success("뽀모도로 시간이 완료되었습니다!")
+                
+            # 시계 & 디지털 타임 갱신
+            clock_place.markdown(render_analog_clock(st.session_state.pomo_current_sec, st.session_state.pomo_target_min * 60, True), unsafe_allow_html=True)
+            digital_place.markdown(f'<div class="digital-clock">{format_hhmmss(st.session_state.pomo_current_sec)}</div>', unsafe_allow_html=True)
+            
+        else:  # 공부 시간 측정 (스톱워치)
+            st.session_state.stopwatch_sec += 1
+            clock_place.markdown(render_analog_clock(st.session_state.stopwatch_sec, 3600, False), unsafe_allow_html=True)
+            digital_place.markdown(f'<div class="digital-clock">{format_hhmmss(st.session_state.stopwatch_sec)}</div>', unsafe_allow_html=True)
 
-    # 시간 종료 시 자동 전환
-    if st.session_state.current_time_sec == 0 and st.session_state.is_running:
-        now_str = datetime.datetime.now().strftime("%H:%M:%S")
-        current_task = task_name if task_name else "목표 미입력"
+        # 총 시간 & 과목별 시간 화면 갱신
+        total_time_place.markdown(f"<h2 style='color:#1E88E5;'>{format_hhmmss(st.session_state.total_study_sec)}</h2>", unsafe_allow_html=True)
+        update_subject_display()
 
-        if st.session_state.mode == "집중 모드":
-            st.balloons()
-            st.session_state.pomo_count += 1
-            st.session_state.logs.append({"time": now_str, "task": current_task, "mode": "집중 완료"})
-            st.success("🎉 집중 시간이 끝났습니다! 휴식을 취하세요.")
-
-            # 휴식 모드로 전환
-            st.session_state.mode = "휴식 모드"
-            st.session_state.current_time_sec = st.session_state.rest_min * 60
-            st.session_state.total_time_sec = st.session_state.rest_min * 60
-            st.session_state.is_running = False
-        else:
-            st.snow()
-            st.session_state.logs.append({"time": now_str, "task": current_task, "mode": "휴식 완료"})
-            st.info("🔔 휴식 시간이 끝났습니다! 다시 집중해볼까요?")
-
-            # 집중 모드로 전환
-            st.session_state.mode = "집중 모드"
-            st.session_state.current_time_sec = st.session_state.work_min * 60
-            st.session_state.total_time_sec = st.session_state.work_min * 60
-            st.session_state.is_running = False
-
-        st.rerun()
+        if not st.session_state.is_running:
+            st.rerun()
