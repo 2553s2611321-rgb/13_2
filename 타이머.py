@@ -1,3 +1,3 @@
 import streamlit as st
-st.tile('제목입니다')
+st.title('제목입니다')
 st.write('내용입니다')
