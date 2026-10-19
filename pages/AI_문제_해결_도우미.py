@@ -73,4 +73,43 @@ with st.form(key="problem_form"):
 # 프롬프트 엔지니어링 (학생 및 문제 해결 중심)
 SYSTEM_INSTRUCTION = f"""
 너는 학생들을 돕는 최고의 '학생 전용 문제 해결 컨설턴트'이다.
-너의 유일한 목적은 학생이 제출한 문제에 대해 원론적이고 진부한 조언(예: '공
+너의 유일한 목적은 학생이 제출한 문제에 대해 원론적이고 진부한 조언(예: '공부는 중요하니 열심히 하세요', '친구와 대화를 나누세요' 등)을 완전히 배제하고, **학생이 책상이나 학교에서 오늘 당장 5분 안에 시작할 수 있는 실천 지침**을 제시하는 것이다.
+
+[답변 규칙]
+1. 불필요한 인사나 교과서적인 설명은 전부 생략할 것.
+2. 학생의 눈높이에 맞춰 이해하기 쉽고 명확한 말투로 작성할 것.
+3. 선택된 분야({category})와 요청 스타일({response_format})에 맞추어 구성할 것.
+4. 오늘 당장 5분 안에 실행할 수 있는 **첫 번째 작은 행동(Small Win)**을 반드시 하단에 포함할 것.
+"""
+
+if submit_button:
+    if not api_key_to_use:
+        st.error("⚠️ Gemini API Key가 설정되지 않았습니다. 사이드바에 API Key를 입력하거나 Secrets를 등록해 주세요.")
+    elif not problem_input.strip():
+        st.warning("⚠️ 해결하고 싶은 문제 내용을 입력해 주세요.")
+    else:
+        with st.spinner("🔍 분석 중... 학생 맞춤형 솔루션을 생성하고 있습니다."):
+            try:
+                # Gemini 클라이언트 초기화
+                client = genai.Client(api_key=api_key_to_use)
+                
+                # API 호출 (gemini-3.5-flash-lite)
+                response = client.models.generate_content(
+                    model="gemini-3.5-flash-lite",
+                    contents=f"분야: {category}\n요청 스타일: {response_format}\n\n[학생의 고민/문제]\n{problem_input}",
+                    config=types.GenerateContentConfig(
+                        system_instruction=SYSTEM_INSTRUCTION,
+                        temperature=0.3
+                    )
+                )
+                
+                st.success("✨ 해결 솔루션 생성이 완료되었습니다!")
+                
+                # 결과 출력
+                st.markdown("### 🎯 맞춤형 문제 해결 솔루션")
+                st.markdown("---")
+                st.markdown(response.text)
+                    
+            except Exception as e:
+                st.error(f"❌ API 호출 중 오류가 발생했습니다: {str(e)}")
+                st.info("💡 API Key가 올바른지, Google AI Studio에서 키 권한 및 제한을 확인해 주세요.")
