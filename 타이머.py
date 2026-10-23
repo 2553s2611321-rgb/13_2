@@ -9,7 +9,7 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS - 세 컬럼의 높이와 하단 끝선을 완전히 일정하게 맞춤
+# Custom CSS - 깔끔한 전체 배경 및 폼 요소 스타일링
 st.markdown("""
     <style>
     .stApp {
@@ -17,32 +17,26 @@ st.markdown("""
     }
     
     .block-container {
-        padding-top: 3rem !important;
+        padding-top: 3.5rem !important;
         padding-bottom: 2rem !important;
     }
-    
-    /* 세 컬럼 모두 고정 높이를 가지며 하단 라인이 정렬되도록 지정 */
-    [data-testid="stColumn"] [data-testid="stVerticalBlockBorderWrapper"] {
+
+    /* st.container(border=True) 박스들을 하늘색 톤 스타일로统一 */
+    [data-testid="stContainer"] {
         background-color: #DDEBF7 !important;
         border: 2px solid #5B9BD5 !important;
         border-radius: 12px !important;
-        padding: 20px !important;
-        height: 650px !important; /* 세 박스의 고정 높이 */
-        box-sizing: border-box !important;
-        display: flex !important;
-        flex-direction: column !important;
-        justify-content: space-between !important;
-        overflow-y: auto !important;
+        padding: 15px !important;
     }
 
     /* 폼 요소 스타일 */
     [data-testid="stForm"] {
-        background-color: rgba(255, 255, 255, 0.8) !important;
+        background-color: rgba(255, 255, 255, 0.85) !important;
         border-radius: 8px !important;
         border: 1px solid #B0C4DE !important;
     }
 
-    /* 중앙 영역 타이틀 및 시계 스타일 */
+    /* 중앙 타이틀 및 시계 스타일 */
     .total-title {
         font-size: 1.8rem;
         font-weight: bold;
@@ -64,7 +58,7 @@ st.markdown("""
         color: #111111;
         text-align: center;
         margin-top: 5px;
-        margin-bottom: 10px;
+        margin-bottom: 15px;
         font-family: 'Courier New', Courier, monospace, sans-serif;
     }
     </style>
@@ -164,12 +158,14 @@ if st.session_state.is_running:
     else:
         st.session_state.last_tick_time = now
 
-# 5. 3컬럼 레이아웃 구성
+# 5. 3컬럼 레이아웃 구성 (모든 박스 높이 680px로 동일하게 설정)
 col_left, col_center, col_right = st.columns([1, 1.2, 1])
 
-# [좌측] 공부 리스트 (높이 650px 박스)
+BOX_HEIGHT = 680  # 세 상자의 높이를 통일시키는 핵심 속성
+
+# [좌측] 공부 리스트
 with col_left:
-    with st.container(border=True):
+    with st.container(border=True, height=BOX_HEIGHT):
         st.markdown("<h3 style='margin-top:0; color:#000000; font-weight:bold;'>공부 리스트</h3>", unsafe_allow_html=True)
         
         with st.form("task_form", clear_on_submit=True):
@@ -193,9 +189,9 @@ with col_left:
             chk = st.checkbox(f"[{t['subject']}] {t['task']}", value=t["completed"], key=f"t_{i}")
             st.session_state.tasks[i]["completed"] = chk
 
-# [중앙] 총 공부 시간 & 타이머/스톱워치 (동일하게 border=True 사용)
+# [중앙] 총 공부 시간 & 타이머/스톱워치
 with col_center:
-    with st.container(border=True):
+    with st.container(border=True, height=BOX_HEIGHT):
         st.markdown('<div class="total-title">총 공부 시간</div>', unsafe_allow_html=True)
         st.markdown(f'<div class="total-time-display">{format_hhmmss(st.session_state.total_study_sec)}</div>', unsafe_allow_html=True)
 
@@ -243,9 +239,9 @@ with col_center:
                 st.session_state.stopwatch_sec = 0
                 st.rerun()
 
-# [우측] 과목별 공부 시간 (높이 650px 박스)
+# [우측] 과목별 공부 시간
 with col_right:
-    with st.container(border=True):
+    with st.container(border=True, height=BOX_HEIGHT):
         st.markdown("<h3 style='margin-top:0; color:#000000; font-weight:bold;'>과목별 공부 시간</h3>", unsafe_allow_html=True)
         for sub, sec in st.session_state.subject_times.items():
             st.write(f"**{sub}**: {format_hhmmss(sec)}")
