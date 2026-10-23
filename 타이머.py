@@ -9,26 +9,30 @@ st.set_page_config(
     layout="wide"
 )
 
-# Custom CSS - 상단 패딩 수정으로 잘림 현상 해결
+# Custom CSS - 세 컬럼의 높이와 하단 끝선을 완전히 일정하게 맞춤
 st.markdown("""
     <style>
     .stApp {
         background-color: #FFFFFF;
     }
     
-    /* 상단 여백(padding-top)을 충분히 주어 텍스트 잘림 방지 */
     .block-container {
-        padding-top: 4rem !important;
+        padding-top: 3rem !important;
         padding-bottom: 2rem !important;
     }
     
-    /* 좌/우 컨테이너 스타일링 */
-    [data-testid="stColumn"]:first-child [data-testid="stVerticalBlockBorderWrapper"],
-    [data-testid="stColumn"]:last-child [data-testid="stVerticalBlockBorderWrapper"] {
+    /* 세 컬럼 모두 고정 높이를 가지며 하단 라인이 정렬되도록 지정 */
+    [data-testid="stColumn"] [data-testid="stVerticalBlockBorderWrapper"] {
         background-color: #DDEBF7 !important;
         border: 2px solid #5B9BD5 !important;
         border-radius: 12px !important;
-        padding: 15px !important;
+        padding: 20px !important;
+        height: 650px !important; /* 세 박스의 고정 높이 */
+        box-sizing: border-box !important;
+        display: flex !important;
+        flex-direction: column !important;
+        justify-content: space-between !important;
+        overflow-y: auto !important;
     }
 
     /* 폼 요소 스타일 */
@@ -38,13 +42,13 @@ st.markdown("""
         border: 1px solid #B0C4DE !important;
     }
 
-    /* 중앙 영역 스타일 */
+    /* 중앙 영역 타이틀 및 시계 스타일 */
     .total-title {
         font-size: 1.8rem;
         font-weight: bold;
         color: #000000;
         text-align: center;
-        margin-top: 5px;
+        margin-top: 0px;
         margin-bottom: 5px;
     }
     .total-time-display {
@@ -52,15 +56,15 @@ st.markdown("""
         font-weight: bold;
         color: #1E88E5;
         text-align: center;
-        margin-bottom: 15px;
+        margin-bottom: 10px;
     }
     .digital-clock {
         font-size: 2.5rem;
         font-weight: bold;
         color: #111111;
         text-align: center;
-        margin-top: 10px;
-        margin-bottom: 15px;
+        margin-top: 5px;
+        margin-bottom: 10px;
         font-family: 'Courier New', Courier, monospace, sans-serif;
     }
     </style>
@@ -127,8 +131,8 @@ def render_analog_clock(current_sec, max_sec, is_countdown=True):
         path_d = f"M {cx},{cy} L {cx},{cy - r} A {r},{r} 0 {large_arc_flag},1 {x},{y} Z"
 
     svg_code = f"""
-    <div style="display: flex; justify-content: center; align-items: center; margin: 10px 0;">
-        <svg width="220" height="220" viewBox="0 0 200 200">
+    <div style="display: flex; justify-content: center; align-items: center; margin: 5px 0;">
+        <svg width="180" height="180" viewBox="0 0 200 200">
             <circle cx="{cx}" cy="{cy}" r="{r + 4}" fill="none" stroke="#D32F2F" stroke-width="4"/>
             <circle cx="{cx}" cy="{cy}" r="{r}" fill="#000000" />
             <path d="{path_d}" fill="#FF0000" />
@@ -163,7 +167,7 @@ if st.session_state.is_running:
 # 5. 3컬럼 레이아웃 구성
 col_left, col_center, col_right = st.columns([1, 1.2, 1])
 
-# [좌측] 공부 리스트
+# [좌측] 공부 리스트 (높이 650px 박스)
 with col_left:
     with st.container(border=True):
         st.markdown("<h3 style='margin-top:0; color:#000000; font-weight:bold;'>공부 리스트</h3>", unsafe_allow_html=True)
@@ -179,7 +183,7 @@ with col_left:
                         st.session_state.subject_times[sub] = 0
                     st.rerun()
 
-        st.markdown("<hr style='border:1px solid #B0C4DE; margin: 15px 0;'>", unsafe_allow_html=True)
+        st.markdown("<hr style='border:1px solid #B0C4DE; margin: 12px 0;'>", unsafe_allow_html=True)
         
         sub_list = list(st.session_state.subject_times.keys())
         st.session_state.selected_subject = st.selectbox("현재 학습 과목", sub_list)
@@ -189,56 +193,57 @@ with col_left:
             chk = st.checkbox(f"[{t['subject']}] {t['task']}", value=t["completed"], key=f"t_{i}")
             st.session_state.tasks[i]["completed"] = chk
 
-# [중앙] 총 공부 시간 & 타이머/스톱워치
+# [중앙] 총 공부 시간 & 타이머/스톱워치 (동일하게 border=True 사용)
 with col_center:
-    st.markdown('<div class="total-title">총 공부 시간</div>', unsafe_allow_html=True)
-    st.markdown(f'<div class="total-time-display">{format_hhmmss(st.session_state.total_study_sec)}</div>', unsafe_allow_html=True)
+    with st.container(border=True):
+        st.markdown('<div class="total-title">총 공부 시간</div>', unsafe_allow_html=True)
+        st.markdown(f'<div class="total-time-display">{format_hhmmss(st.session_state.total_study_sec)}</div>', unsafe_allow_html=True)
 
-    selected_mode = st.radio(
-        "시계 기능 선택",
-        ["뽀모도로 타이머", "공부 시간 측정"],
-        horizontal=True,
-        disabled=st.session_state.is_running
-    )
-    if selected_mode != st.session_state.mode:
-        st.session_state.mode = selected_mode
-        st.rerun()
-
-    if st.session_state.mode == "뽀모도로 타이머" and not st.session_state.is_running:
-        p_min = st.number_input("뽀모도로 설정(분)", min_value=1, max_value=120, value=st.session_state.pomo_target_min, step=5)
-        if p_min != st.session_state.pomo_target_min:
-            st.session_state.pomo_target_min = p_min
-            st.session_state.pomo_current_sec = p_min * 60
-
-    # 시계 & 디지털 출력
-    if st.session_state.mode == "뽀모도로 타이머":
-        st.markdown(render_analog_clock(st.session_state.pomo_current_sec, st.session_state.pomo_target_min * 60, True), unsafe_allow_html=True)
-        st.markdown(f'<div class="digital-clock">{format_hhmmss(st.session_state.pomo_current_sec)}</div>', unsafe_allow_html=True)
-    else:
-        st.markdown(render_analog_clock(st.session_state.stopwatch_sec, 3600, False), unsafe_allow_html=True)
-        st.markdown(f'<div class="digital-clock">{format_hhmmss(st.session_state.stopwatch_sec)}</div>', unsafe_allow_html=True)
-
-    # 제어 버튼
-    b_col1, b_col2, b_col3 = st.columns(3)
-    with b_col1:
-        if st.button("시작", use_container_width=True):
-            st.session_state.is_running = True
-            st.session_state.last_tick_time = time.time()
-            st.rerun()
-    with b_col2:
-        if st.button("일시정지", use_container_width=True):
-            st.session_state.is_running = False
-            st.session_state.last_tick_time = None
-            st.rerun()
-    with b_col3:
-        if st.button("리셋", use_container_width=True):
-            st.session_state.is_running = False
-            st.session_state.last_tick_time = None
-            st.session_state.pomo_current_sec = st.session_state.pomo_target_min * 60
-            st.session_state.stopwatch_sec = 0
+        selected_mode = st.radio(
+            "시계 기능 선택",
+            ["뽀모도로 타이머", "공부 시간 측정"],
+            horizontal=True,
+            disabled=st.session_state.is_running
+        )
+        if selected_mode != st.session_state.mode:
+            st.session_state.mode = selected_mode
             st.rerun()
 
-# [우측] 과목별 공부 시간
+        if st.session_state.mode == "뽀모도로 타이머" and not st.session_state.is_running:
+            p_min = st.number_input("뽀모도로 설정(분)", min_value=1, max_value=120, value=st.session_state.pomo_target_min, step=5)
+            if p_min != st.session_state.pomo_target_min:
+                st.session_state.pomo_target_min = p_min
+                st.session_state.pomo_current_sec = p_min * 60
+
+        # 시계 & 디지털 출력
+        if st.session_state.mode == "뽀모도로 타이머":
+            st.markdown(render_analog_clock(st.session_state.pomo_current_sec, st.session_state.pomo_target_min * 60, True), unsafe_allow_html=True)
+            st.markdown(f'<div class="digital-clock">{format_hhmmss(st.session_state.pomo_current_sec)}</div>', unsafe_allow_html=True)
+        else:
+            st.markdown(render_analog_clock(st.session_state.stopwatch_sec, 3600, False), unsafe_allow_html=True)
+            st.markdown(f'<div class="digital-clock">{format_hhmmss(st.session_state.stopwatch_sec)}</div>', unsafe_allow_html=True)
+
+        # 제어 버튼
+        b_col1, b_col2, b_col3 = st.columns(3)
+        with b_col1:
+            if st.button("시작", use_container_width=True):
+                st.session_state.is_running = True
+                st.session_state.last_tick_time = time.time()
+                st.rerun()
+        with b_col2:
+            if st.button("일시정지", use_container_width=True):
+                st.session_state.is_running = False
+                st.session_state.last_tick_time = None
+                st.rerun()
+        with b_col3:
+            if st.button("리셋", use_container_width=True):
+                st.session_state.is_running = False
+                st.session_state.last_tick_time = None
+                st.session_state.pomo_current_sec = st.session_state.pomo_target_min * 60
+                st.session_state.stopwatch_sec = 0
+                st.rerun()
+
+# [우측] 과목별 공부 시간 (높이 650px 박스)
 with col_right:
     with st.container(border=True):
         st.markdown("<h3 style='margin-top:0; color:#000000; font-weight:bold;'>과목별 공부 시간</h3>", unsafe_allow_html=True)
