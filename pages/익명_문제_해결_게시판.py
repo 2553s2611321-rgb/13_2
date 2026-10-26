@@ -1,8 +1,6 @@
 
 import streamlit as st
-from supabase import create_client
 from datetime import datetime
-import uuid
 
 st.set_page_config(
     page_title="익명 내신 문제 해결 게시판",
@@ -10,303 +8,234 @@ st.set_page_config(
     layout="wide"
 )
 
-SUBJECTS = ["수학", "국어", "영어", "과학", "사회/역사", "기타"]
-GRADES = ["중1", "중2", "중3", "고1", "고2", "고3"]
-BUCKET = "question-images"
-MAX_IMAGE_SIZE = 5 * 1024 * 1024
+# 세션에 예시 데이터 저장
+if "questions" not in st.session_state:
+    st.session_state.questions = [
+        {
+            "id": 1,
+            "grade": "고1",
+            "subject": "수학",
+            "title": "이차방정식 문제 풀이가 어려워요",
+            "content": "판별식을 이용하는 문제인데 풀이 과정을 설명해 주세요.",
+            "author": "익명 01",
+            "solved": False,
+            "created": "2026-10-25 15:30",
+            "answers": [
+                {
+                    "author": "익명 답변자",
+                    "content": "먼저 판별식 D=b²-4ac를 구해 보세요!"
+                }
+            ]
+        },
+        {
+            "id": 2,
+            "grade": "중3",
+            "subject": "영어",
+            "title": "관계대명사와 관계부사 차이",
+            "content": "when과 which를 언제 구분해서 사용하나요?",
+            "author": "익명 02",
+            "solved": True,
+            "created": "2026-10-24 18:20",
+            "answers": [
+                {
+                    "author": "익명 답변자",
+                    "content": "뒤에 완전한 문장이 오는지 확인하면 도움이 돼요."
+                }
+            ]
+        },
+        {
+            "id": 3,
+            "grade": "고2",
+            "subject": "과학",
+            "title": "전류와 전압의 관계",
+            "content": "옴의 법칙을 실제 문제에 적용하는 방법이 궁금합니다.",
+            "author": "익명 03",
+            "solved": False,
+            "created": "2026-10-23 12:10",
+            "answers": []
+        }
+    ]
+
+if "next_id" not in st.session_state:
+    st.session_state.next_id = 4
+
+if "selected_question" not in st.session_state:
+    st.session_state.selected_question = None
 
 st.title("📚 익명 내신 문제 해결 게시판")
-st.caption("모르는 문제를 질문하고 서로 풀이를 공유해 보세요!")
+st.caption("모르는 문제를 질문하고 함께 해결해 보세요!")
 
-# Supabase 연결
-@st.cache_resource
-def connect_db():
-    return create_client(
-        st.secrets["supabase"]["url"],
-        st.secrets["supabase"]["anon_key"]
-    )
+st.info(
+    "프로토타입 체험용입니다. DB를 사용하지 않으므로 "
+    "새로고침이나 앱 재시작 후 작성한 내용이 사라질 수 있습니다."
+)
 
-try:
-    db = connect_db()
-except Exception:
-    st.error("Supabase 설정을 확인해 주세요.")
-    st.stop()
-
-
-# 게시글 불러오기
-def get_questions():
-    result = (
-        db.table("questions")
-        .select("*")
-        .order("created_at", desc=True)
-        .execute()
-    )
-    return result.data or []
-
-
-# 답변 불러오기
-def get_answers(question_id):
-    result = (
-        db.table("answers")
-        .select("*")
-        .eq("question_id", question_id)
-        .order("created_at")
-        .execute()
-    )
-    return result.data or []
-
-
-# 날짜 표시
-def format_date(value):
-    if not value:
-        return ""
-    try:
-        return datetime.fromisoformat(
-            value.replace("Z", "+00:00")
-        ).astimezone().strftime("%Y-%m-%d %H:%M")
-    except (ValueError, TypeError):
-        return str(value)
-
-
-# 사진 업로드
-def upload_image(file):
-    if file is None:
-        return None
-
-    data = file.getvalue()
-
-    if len(data) > MAX_IMAGE_SIZE:
-        raise ValueError("사진은 5MB 이하만 첨부할 수 있습니다.")
-
-    extension = file.name.rsplit(".", 1)[-1].lower()
-
-    if extension not in ["png", "jpg", "jpeg"]:
-        raise ValueError("PNG, JPG, JPEG 파일만 가능합니다.")
-
-    path = f"{uuid.uuid4().hex}.{extension}"
-
-    db.storage.from_(BUCKET).upload(
-        path,
-        data,
-        file_options={
-            "content-type": file.type or "image/jpeg"
-        }
-    )
-
-    return db.storage.from_(BUCKET).get_public_url(path)
-
-
-# 사이드바: 질문 작성
-with st.sidebar:
-    st.header("✏️ 질문 작성")
-
+# 새 질문 작성
+with st.expander("✏️ 새 질문 작성하기", expanded=False):
     with st.form("question_form", clear_on_submit=True):
-        subject = st.selectbox("과목", SUBJECTS)
-        grade = st.selectbox("학년", GRADES)
-
-        title = st.text_input(
-            "질문 제목",
-            max_chars=120,
-            placeholder="예: 이차방정식 문제 질문"
+        grade = st.selectbox(
+            "학년",
+            ["중1", "중2", "중3", "고1", "고2", "고3"]
         )
 
-        content = st.text_area(
-            "질문 내용",
-            max_chars=8000,
-            placeholder="문제 내용과 막힌 부분을 적어 주세요."
+        subject = st.selectbox(
+            "과목",
+            ["수학", "국어", "영어", "과학", "사회", "역사", "기타"]
         )
 
-        photo = st.file_uploader(
-            "문제 사진 첨부 (선택)",
-            type=["png", "jpg", "jpeg"]
-        )
+        title = st.text_input("질문 제목")
+        content = st.text_area("문제 내용 및 질문")
 
-        submit = st.form_submit_button(
-            "질문 등록하기",
-            use_container_width=True
-        )
+        submitted = st.form_submit_button("질문 등록")
 
-    if submit:
-        if not title.strip() or not content.strip():
-            st.warning("제목과 내용을 모두 입력해 주세요.")
-        else:
-            try:
-                image_url = upload_image(photo)
-
-                db.table("questions").insert({
-                    "subject": subject,
+        if submitted:
+            if not title.strip() or not content.strip():
+                st.warning("제목과 내용을 모두 입력해 주세요.")
+            else:
+                new_question = {
+                    "id": st.session_state.next_id,
                     "grade": grade,
+                    "subject": subject,
                     "title": title.strip(),
                     "content": content.strip(),
-                    "image_url": image_url,
-                    "resolved": False,
-                    "author": "익명"
-                }).execute()
+                    "author": "익명 사용자",
+                    "solved": False,
+                    "created": datetime.now().strftime("%Y-%m-%d %H:%M"),
+                    "answers": []
+                }
+
+                st.session_state.questions.insert(0, new_question)
+                st.session_state.next_id += 1
+                st.session_state.selected_question = new_question["id"]
 
                 st.success("질문이 등록되었습니다!")
                 st.rerun()
 
-            except Exception as error:
-                st.error(f"질문 등록 실패: {error}")
-
-    st.divider()
-    st.caption("개인정보는 질문이나 사진에 올리지 마세요.")
-
-
 # 검색 및 필터
-col1, col2, col3 = st.columns([2, 1, 1])
+st.subheader("🔎 질문 둘러보기")
+
+col1, col2, col3 = st.columns(3)
 
 with col1:
-    keyword = st.text_input(
-        "🔎 게시글 검색",
-        placeholder="제목 또는 내용 검색"
-    )
+    search_text = st.text_input("제목 또는 내용 검색", placeholder="검색어 입력")
 
 with col2:
     subject_filter = st.selectbox(
-        "과목",
-        ["전체"] + SUBJECTS
+        "과목 필터",
+        ["전체", "수학", "국어", "영어", "과학", "사회", "역사", "기타"]
     )
 
 with col3:
     status_filter = st.selectbox(
         "해결 상태",
-        ["전체", "답변 대기 중", "해결 완료"]
+        ["전체", "미해결", "해결 완료"]
     )
 
+questions = st.session_state.questions
 
-# 게시글 목록
-try:
-    questions = get_questions()
-except Exception as error:
-    st.error(f"게시글을 불러오지 못했습니다: {error}")
-    st.stop()
+filtered_questions = []
 
-if subject_filter != "전체":
-    questions = [
-        q for q in questions
-        if q["subject"] == subject_filter
-    ]
-
-if status_filter == "답변 대기 중":
-    questions = [q for q in questions if not q["resolved"]]
-elif status_filter == "해결 완료":
-    questions = [q for q in questions if q["resolved"]]
-
-if keyword.strip():
-    word = keyword.strip().casefold()
-    questions = [
-        q for q in questions
-        if word in q["title"].casefold()
-        or word in q["content"].casefold()
-    ]
-
-st.subheader(f"📋 게시글 목록 ({len(questions)}개)")
-
-if not questions:
-    st.info("게시글이 없습니다. 첫 질문을 작성해 보세요!")
-
-
-# 개별 게시글
 for q in questions:
-    status = "✅ 해결 완료" if q["resolved"] else "❓ 답변 대기 중"
+    if subject_filter != "전체" and q["subject"] != subject_filter:
+        continue
 
-    with st.expander(
-        f"[{q['subject']} / {q['grade']}] "
-        f"{q['title']} · {status}"
-    ):
+    if status_filter == "미해결" and q["solved"]:
+        continue
+
+    if status_filter == "해결 완료" and not q["solved"]:
+        continue
+
+    keyword = search_text.strip().lower()
+    if keyword and keyword not in (
+        q["title"] + " " + q["content"]
+    ).lower():
+        continue
+
+    filtered_questions.append(q)
+
+st.caption(f"총 {len(filtered_questions)}개의 질문")
+
+# 질문 목록
+for q in filtered_questions:
+    with st.container(border=True):
+        col1, col2 = st.columns([5, 1])
+
+        with col1:
+            status = "✅ 해결 완료" if q["solved"] else "🟡 미해결"
+            st.markdown(f"**{q['title']}**")
+            st.caption(
+                f"{q['grade']} · {q['subject']} · "
+                f"{q['author']} · {q['created']}"
+            )
+            st.write(q["content"])
+            st.caption(f"{status}  |  답변 {len(q['answers'])}개")
+
+        with col2:
+            if st.button("상세 보기", key=f"view_{q['id']}"):
+                st.session_state.selected_question = q["id"]
+                st.rerun()
+
+# 선택한 질문 상세 화면
+selected_id = st.session_state.selected_question
+
+if selected_id is not None:
+    selected = next(
+        (q for q in questions if q["id"] == selected_id),
+        None
+    )
+
+    if selected:
+        st.divider()
+        st.subheader("📖 질문 상세")
+
+        st.markdown(f"### {selected['title']}")
         st.caption(
-            f"작성자: 익명 · {format_date(q.get('created_at'))}"
+            f"{selected['grade']} · {selected['subject']} · "
+            f"{selected['author']} · {selected['created']}"
         )
+        st.write(selected["content"])
 
-        st.write(q["content"])
-
-        if q.get("image_url"):
-            st.image(
-                q["image_url"],
-                caption="첨부된 문제 사진",
-                use_container_width=True
-            )
-
-        # 해결 상태 변경
-        if not q["resolved"]:
-            if st.button(
-                "해결 완료로 표시",
-                key=f"resolve_{q['id']}"
-            ):
-                try:
-                    db.table("questions").update(
-                        {"resolved": True}
-                    ).eq("id", q["id"]).execute()
-                    st.rerun()
-                except Exception as error:
-                    st.error(f"상태 변경 실패: {error}")
+        if selected["solved"]:
+            st.success("해결 완료")
         else:
-            st.success("해결된 질문입니다.")
+            st.warning("아직 해결되지 않은 질문입니다.")
 
-            if st.button(
-                "해결 상태 취소",
-                key=f"unresolve_{q['id']}"
-            ):
-                try:
-                    db.table("questions").update(
-                        {"resolved": False}
-                    ).eq("id", q["id"]).execute()
-                    st.rerun()
-                except Exception as error:
-                    st.error(f"상태 변경 실패: {error}")
+        if st.button(
+            "해결 상태 변경",
+            key=f"solve_{selected['id']}"
+        ):
+            selected["solved"] = not selected["solved"]
+            st.rerun()
 
-        # 답변 목록
-        st.markdown("### 💬 답변 목록")
+        st.markdown("#### 💬 답변")
 
-        try:
-            answers = get_answers(q["id"])
-        except Exception as error:
-            st.error(f"답변을 불러오지 못했습니다: {error}")
-            answers = []
+        if selected["answers"]:
+            for i, answer in enumerate(selected["answers"]):
+                with st.container(border=True):
+                    st.caption(answer["author"])
+                    st.write(answer["content"])
+        else:
+            st.write("아직 답변이 없습니다. 첫 답변을 남겨 보세요!")
 
-        if not answers:
-            st.caption("아직 답변이 없습니다.")
-
-        for answer in answers:
-            with st.container(border=True):
-                st.caption(
-                    f"익명 · {format_date(answer.get('created_at'))}"
-                )
-                st.write(answer["content"])
-
-        # 답변 작성
-        st.markdown("#### ✏️ 답변 작성")
-
-        with st.form(f"answer_form_{q['id']}", clear_on_submit=True):
-            answer_content = st.text_area(
-                "답변 내용",
-                max_chars=8000,
-                placeholder="풀이 과정을 이해하기 쉽게 작성해 주세요."
+        with st.form(f"answer_form_{selected['id']}", clear_on_submit=True):
+            answer_text = st.text_area(
+                "답변 작성",
+                placeholder="풀이 방법이나 도움이 되는 내용을 적어 주세요."
             )
 
-            answer_submit = st.form_submit_button("답변 등록")
+            answer_submitted = st.form_submit_button("답변 등록")
 
-            if answer_submit:
-                if not answer_content.strip():
-                    st.warning("답변 내용을 입력해 주세요.")
+            if answer_submitted:
+                if answer_text.strip():
+                    selected["answers"].append({
+                        "author": "익명 답변자",
+                        "content": answer_text.strip()
+                    })
+                    st.success("답변이 등록되었습니다!")
+                    st.rerun()
                 else:
-                    try:
-                        db.table("answers").insert({
-                            "question_id": q["id"],
-                            "content": answer_content.strip(),
-                            "author": "익명"
-                        }).execute()
+                    st.warning("답변 내용을 입력해 주세요.")
 
-                        st.success("답변이 등록되었습니다!")
-                        st.rerun()
-
-                    except Exception as error:
-                        st.error(f"답변 등록 실패: {error}")
-
-
-st.divider()
-st.caption(
-    "익명 게시판입니다. 공개 게시 전 개인정보 보호와 "
-    "관리자 권한 설정을 확인해 주세요."
-)
+        if st.button("상세 보기 닫기"):
+            st.session_state.selected_question = None
+            st.rerun()
