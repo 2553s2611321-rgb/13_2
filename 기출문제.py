@@ -2,20 +2,18 @@ import streamlit as st
 import pandas as pd
 from datetime import datetime
 
-# -------------------------
+# =====================================
 # 기본 설정
-# -------------------------
+# =====================================
 st.set_page_config(
     page_title="기출문제 모음",
     page_icon="📚",
     layout="wide"
 )
 
-# -------------------------
-# 예시 기출문제 데이터
-# 실제 기출문제를 추가하려면 이 목록에 데이터를 추가하세요.
-# answer는 정답 선택지의 번호이며, 첫 번째 선택지는 0입니다.
-# -------------------------
+# =====================================
+# 기출문제 예시 데이터
+# =====================================
 QUESTIONS = [
     {
         "id": 1,
@@ -32,12 +30,12 @@ QUESTIONS = [
             "마지막 문장만 외운다"
         ],
         "answer": 1,
-        "explanation": "글의 핵심 내용과 전체적인 흐름을 함께 살펴야 중심 내용을 정확하게 파악할 수 있습니다."
+        "explanation": "핵심 내용과 글 전체의 흐름을 함께 살펴야 중심 내용을 정확하게 파악할 수 있습니다."
     },
     {
         "id": 2,
         "subject": "국어",
-        "grade": "1학년",
+        "grade": "2학년",
         "year": 2024,
         "exam": "기말고사",
         "title": "비유 표현",
@@ -53,7 +51,7 @@ QUESTIONS = [
         "year": 2025,
         "exam": "중간고사",
         "title": "일차방정식",
-        "question": "3x + 5 = 20을 만족하는 x의 값은?",
+        "question": "3x + 5 = 20일 때 x의 값은?",
         "choices": ["3", "5", "8", "15"],
         "answer": 1,
         "explanation": "3x + 5 = 20에서 양변에 5를 빼면 3x = 15입니다. 따라서 x = 5입니다."
@@ -62,13 +60,13 @@ QUESTIONS = [
         "id": 4,
         "subject": "수학",
         "grade": "2학년",
-        "year": 2024,
+        "year": 2025,
         "exam": "기말고사",
         "title": "삼각형의 넓이",
-        "question": "밑변이 8cm, 높이가 5cm인 삼각형의 넓이는?",
+        "question": "밑변이 8cm이고 높이가 5cm인 삼각형의 넓이는?",
         "choices": ["13㎠", "20㎠", "40㎠", "80㎠"],
         "answer": 1,
-        "explanation": "삼각형의 넓이는 밑변 × 높이 ÷ 2입니다. 따라서 8 × 5 ÷ 2 = 20㎠입니다."
+        "explanation": "삼각형의 넓이는 밑변 × 높이 ÷ 2입니다. 8 × 5 ÷ 2 = 20㎠입니다."
     },
     {
         "id": 5,
@@ -84,6 +82,18 @@ QUESTIONS = [
     },
     {
         "id": 6,
+        "subject": "영어",
+        "grade": "2학년",
+        "year": 2024,
+        "exam": "중간고사",
+        "title": "영어 어휘",
+        "question": "'important'와 가장 가까운 뜻을 가진 단어는?",
+        "choices": ["easy", "significant", "empty", "quiet"],
+        "answer": 1,
+        "explanation": "important와 significant는 모두 '중요한'이라는 뜻입니다."
+    },
+    {
+        "id": 7,
         "subject": "사회",
         "grade": "1학년",
         "year": 2025,
@@ -95,46 +105,10 @@ QUESTIONS = [
         "explanation": "축척은 지도상의 거리와 실제 거리 사이의 비율을 나타냅니다."
     },
     {
-        "id": 7,
-        "subject": "과학",
-        "grade": "1학년",
-        "year": 2024,
-        "exam": "기말고사",
-        "title": "물질의 상태",
-        "question": "일정한 모양과 부피를 가지는 물질의 상태는?",
-        "choices": ["고체", "액체", "기체", "수증기"],
-        "answer": 0,
-        "explanation": "고체는 일정한 모양과 부피를 유지합니다."
-    },
-    {
         "id": 8,
-        "subject": "한국사",
-        "grade": "2학년",
-        "year": 2025,
-        "exam": "기말고사",
-        "title": "고려의 건국",
-        "question": "고려를 건국한 인물은 누구인가요?",
-        "choices": ["이성계", "왕건", "궁예", "견훤"],
-        "answer": 1,
-        "explanation": "왕건은 918년에 고려를 건국했습니다."
-    },
-    {
-        "id": 9,
-        "subject": "과학",
-        "grade": "2학년",
-        "year": 2025,
-        "exam": "중간고사",
-        "title": "힘과 운동",
-        "question": "물체의 운동 상태를 변화시키는 원인이 되는 것은?",
-        "choices": ["힘", "색깔", "모양", "크기"],
-        "answer": 0,
-        "explanation": "힘은 물체의 운동 상태나 모양을 변화시킬 수 있습니다."
-    },
-    {
-        "id": 10,
         "subject": "사회",
         "grade": "2학년",
-        "year": 2023,
+        "year": 2024,
         "exam": "기말고사",
         "title": "민주주의",
         "question": "국민이 정치에 참여하는 방법으로 적절한 것은?",
@@ -146,54 +120,152 @@ QUESTIONS = [
         ],
         "answer": 0,
         "explanation": "선거는 국민이 대표자를 선택하고 정치에 참여하는 중요한 방법입니다."
+    },
+    {
+        "id": 9,
+        "subject": "과학",
+        "grade": "1학년",
+        "year": 2024,
+        "exam": "기말고사",
+        "title": "물질의 상태",
+        "question": "일정한 모양과 부피를 가지는 물질의 상태는?",
+        "choices": ["고체", "액체", "기체", "수증기"],
+        "answer": 0,
+        "explanation": "고체는 일정한 모양과 부피를 유지합니다."
+    },
+    {
+        "id": 10,
+        "subject": "과학",
+        "grade": "2학년",
+        "year": 2025,
+        "exam": "중간고사",
+        "title": "힘과 운동",
+        "question": "물체의 운동 상태를 변화시키는 원인이 되는 것은?",
+        "choices": ["힘", "색깔", "이름", "무늬"],
+        "answer": 0,
+        "explanation": "힘은 물체의 운동 상태나 모양을 변화시킬 수 있습니다."
+    },
+    {
+        "id": 11,
+        "subject": "한국사",
+        "grade": "2학년",
+        "year": 2025,
+        "exam": "기말고사",
+        "title": "고려의 건국",
+        "question": "고려를 건국한 인물은 누구인가요?",
+        "choices": ["이성계", "왕건", "궁예", "견훤"],
+        "answer": 1,
+        "explanation": "왕건은 918년에 고려를 건국했습니다."
+    },
+    {
+        "id": 12,
+        "subject": "한국사",
+        "grade": "1학년",
+        "year": 2023,
+        "exam": "중간고사",
+        "title": "조선의 건국",
+        "question": "조선을 건국한 인물은 누구인가요?",
+        "choices": ["왕건", "세종", "이성계", "정몽주"],
+        "answer": 2,
+        "explanation": "이성계는 1392년에 조선을 건국했습니다."
     }
 ]
 
 SUBJECTS = ["국어", "수학", "영어", "사회", "과학", "한국사"]
 
 
-# -------------------------
+# =====================================
 # 세션 상태 초기화
-# -------------------------
-if "page" not in st.session_state:
-    st.session_state.page = "문제 찾기"
+# =====================================
+DEFAULTS = {
+    "navigation": "문제 찾기",
+    "quiz_ids": [],
+    "quiz_index": 0,
+    "answers": {},
+    "checked": set(),
+    "finished": False,
+    "history": []
+}
 
-if "quiz_ids" not in st.session_state:
-    st.session_state.quiz_ids = []
-
-if "quiz_index" not in st.session_state:
-    st.session_state.quiz_index = 0
-
-if "answers" not in st.session_state:
-    st.session_state.answers = {}
-
-if "history" not in st.session_state:
-    st.session_state.history = []
-
-if "quiz_finished" not in st.session_state:
-    st.session_state.quiz_finished = False
+for key, value in DEFAULTS.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
 
-def start_quiz(question_ids):
-    """선택한 문제로 새로운 문제 풀이를 시작합니다."""
-    st.session_state.quiz_ids = list(question_ids)
+# =====================================
+# 기능 함수
+# =====================================
+def start_quiz(ids):
+    st.session_state.quiz_ids = list(ids)
     st.session_state.quiz_index = 0
     st.session_state.answers = {}
-    st.session_state.quiz_finished = False
-    st.session_state.page = "문제 풀기"
+    st.session_state.checked = set()
+    st.session_state.finished = False
+    st.session_state.navigation = "문제 풀기"
 
 
-def find_question(question_id):
-    """문제 ID로 문제를 찾습니다."""
-    return next(
-        (q for q in QUESTIONS if q["id"] == question_id),
-        None
+def get_question(qid):
+    for question in QUESTIONS:
+        if question["id"] == qid:
+            return question
+    return None
+
+
+def save_current_answer(qid):
+    key = f"answer_{qid}"
+    if key in st.session_state:
+        st.session_state.answers[qid] = st.session_state[key]
+
+
+def check_answer(qid):
+    save_current_answer(qid)
+    st.session_state.checked.add(qid)
+
+
+def next_question(qid):
+    save_current_answer(qid)
+    st.session_state.quiz_index += 1
+
+
+def previous_question(qid):
+    save_current_answer(qid)
+    st.session_state.quiz_index -= 1
+
+
+def finish_quiz(qid):
+    save_current_answer(qid)
+
+    if st.session_state.finished:
+        return
+
+    questions = [
+        get_question(i)
+        for i in st.session_state.quiz_ids
+    ]
+    questions = [q for q in questions if q is not None]
+
+    total = len(questions)
+
+    correct = sum(
+        1 for q in questions
+        if st.session_state.answers.get(q["id"]) == q["answer"]
     )
 
+    score = round(correct / total * 100) if total else 0
 
-# -------------------------
+    st.session_state.history.append({
+        "완료 시각": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "문제 수": total,
+        "정답 수": correct,
+        "점수": score
+    })
+
+    st.session_state.finished = True
+
+
+# =====================================
 # 디자인
-# -------------------------
+# =====================================
 st.markdown("""
 <style>
 .stApp {
@@ -204,10 +276,10 @@ st.markdown("""
     padding-top: 2rem;
 }
 .hero {
-    background: linear-gradient(120deg, #d9ecff, #eef7ff);
-    border: 1px solid #b9d8f2;
+    background: linear-gradient(120deg, #d8ebff, #eff7ff);
+    border: 1px solid #b8d8f2;
     border-radius: 16px;
-    padding: 25px;
+    padding: 24px;
     margin-bottom: 20px;
 }
 .hero h1 {
@@ -224,32 +296,32 @@ div.stButton > button {
 """, unsafe_allow_html=True)
 
 
-# -------------------------
-# 사이드바 메뉴
-# -------------------------
+# =====================================
+# 왼쪽 메뉴
+# 중요: navigation을 직접 연결해
+# 페이지 이동이 유지되도록 합니다.
+# =====================================
 with st.sidebar:
     st.markdown("## 📚 기출문제 모음")
     st.caption("원하는 문제를 찾고 풀어보세요.")
 
-    menu = st.radio(
-        "메뉴 선택",
+    st.radio(
+        "메뉴",
         ["문제 찾기", "문제 풀기", "학습 기록"],
         key="navigation"
     )
 
-    st.session_state.page = menu
-
     st.divider()
 
-    st.markdown("### 💡 이용 방법")
+    st.markdown("### 이용 방법")
     st.write("1. 원하는 과목과 연도를 선택하세요.")
     st.write("2. 문제 풀기를 눌러 답을 선택하세요.")
     st.write("3. 채점 후 정답과 해설을 확인하세요.")
 
 
-# -------------------------
-# 페이지 상단
-# -------------------------
+# =====================================
+# 상단 제목
+# =====================================
 st.markdown("""
 <div class="hero">
     <h1>📘 기출문제 모음</h1>
@@ -257,28 +329,28 @@ st.markdown("""
 </div>
 """, unsafe_allow_html=True)
 
-col1, col2, col3 = st.columns(3)
+c1, c2, c3 = st.columns(3)
 
-with col1:
+with c1:
     st.metric("전체 문제", f"{len(QUESTIONS)}개")
 
-with col2:
-    st.metric("과목 수", f"{len(set(q['subject'] for q in QUESTIONS))}개")
+with c2:
+    st.metric("과목 수", f"{len(SUBJECTS)}개")
 
-with col3:
+with c3:
     st.metric("완료한 학습", f"{len(st.session_state.history)}회")
 
 
-# ==================================================
-# 1. 문제 찾기
-# ==================================================
-if st.session_state.page == "문제 찾기":
+# =====================================
+# 페이지 1: 문제 찾기
+# =====================================
+if st.session_state.navigation == "문제 찾기":
 
     st.subheader("🔎 기출문제 검색")
 
-    search_text = st.text_input(
+    search = st.text_input(
         "문제 검색",
-        placeholder="문제 제목이나 키워드를 입력하세요."
+        placeholder="문제 제목 또는 키워드를 입력하세요."
     )
 
     c1, c2, c3, c4 = st.columns(4)
@@ -296,13 +368,14 @@ if st.session_state.page == "문제 찾기":
         )
 
     with c3:
-        available_years = sorted(
+        years = sorted(
             {q["year"] for q in QUESTIONS},
             reverse=True
         )
+
         year = st.selectbox(
             "시험 연도",
-            ["전체"] + available_years
+            ["전체"] + years
         )
 
     with c4:
@@ -314,8 +387,8 @@ if st.session_state.page == "문제 찾기":
     # 검색 조건 적용
     filtered = QUESTIONS.copy()
 
-    if search_text.strip():
-        keyword = search_text.strip().lower()
+    if search.strip():
+        keyword = search.strip().lower()
 
         filtered = [
             q for q in filtered
@@ -350,13 +423,15 @@ if st.session_state.page == "문제 찾기":
 
     st.markdown(f"### 검색 결과 {len(filtered)}개")
 
-    if filtered:
+    if not filtered:
+        st.info("검색 결과가 없습니다. 검색어나 필터를 바꿔보세요.")
 
+    else:
         for q in filtered:
 
             with st.container(border=True):
 
-                left, right = st.columns([5, 1.3])
+                left, right = st.columns([5, 1.4])
 
                 with left:
                     st.markdown(f"### {q['title']}")
@@ -371,42 +446,35 @@ if st.session_state.page == "문제 찾기":
                 with right:
                     st.write("")
 
-                    if st.button(
+                    st.button(
                         "문제 풀기",
                         key=f"solve_{q['id']}",
-                        use_container_width=True
-                    ):
-                        start_quiz([q["id"]])
-                        st.rerun()
+                        use_container_width=True,
+                        on_click=start_quiz,
+                        args=([q["id"]],)
+                    )
 
-                    if st.button(
-                        "해설 보기",
-                        key=f"explain_{q['id']}",
-                        use_container_width=True
-                    ):
-                        st.info(q["explanation"])
+                    with st.expander("해설 보기"):
+                        st.write(q["explanation"])
 
-        if st.button(
+        st.button(
             "검색 결과 전체 풀기",
             type="primary",
-            use_container_width=True
-        ):
-            start_quiz([q["id"] for q in filtered])
-            st.rerun()
-
-    else:
-        st.info("검색 결과가 없습니다. 검색어나 필터를 변경해 보세요.")
+            use_container_width=True,
+            on_click=start_quiz,
+            args=([q["id"] for q in filtered],)
+        )
 
 
-# ==================================================
-# 2. 문제 풀기
-# ==================================================
-elif st.session_state.page == "문제 풀기":
+# =====================================
+# 페이지 2: 문제 풀기
+# =====================================
+elif st.session_state.navigation == "문제 풀기":
 
     st.subheader("✏️ 문제 풀기")
 
     quiz_questions = [
-        find_question(qid)
+        get_question(qid)
         for qid in st.session_state.quiz_ids
     ]
 
@@ -417,13 +485,16 @@ elif st.session_state.page == "문제 풀기":
 
     if not quiz_questions:
 
-        st.info("먼저 문제 찾기에서 문제를 선택해 주세요.")
+        st.info("아직 선택한 문제가 없습니다.")
 
-        if st.button("문제 찾기"):
-            st.session_state.page = "문제 찾기"
-            st.rerun()
+        st.button(
+            "문제 찾기",
+            on_click=lambda: setattr(
+                st.session_state, "navigation", "문제 찾기"
+            )
+        )
 
-    elif st.session_state.quiz_finished:
+    elif st.session_state.finished:
 
         total = len(quiz_questions)
 
@@ -435,7 +506,7 @@ elif st.session_state.page == "문제 풀기":
         score = round(correct / total * 100) if total else 0
 
         st.success(
-            f"학습 완료! 점수는 {score}점입니다. "
+            f"채점 완료! 점수: {score}점 "
             f"({correct}/{total}문제 정답)"
         )
 
@@ -452,32 +523,29 @@ elif st.session_state.page == "문제 풀기":
                     st.success(
                         f"정답: {q['choices'][q['answer']]}"
                     )
+                elif chosen is None:
+                    st.warning(
+                        f"미응답 · 정답: {q['choices'][q['answer']]}"
+                    )
                 else:
-                    if chosen is None:
-                        st.error(
-                            f"미응답 · 정답: {q['choices'][q['answer']]}"
-                        )
-                    else:
-                        st.error(
-                            f"내 답: {q['choices'][chosen]} · "
-                            f"정답: {q['choices'][q['answer']]}"
-                        )
+                    st.error(
+                        f"내 답: {q['choices'][chosen]} · "
+                        f"정답: {q['choices'][q['answer']]}"
+                    )
 
                 st.info(f"해설: {q['explanation']}")
 
-        if st.button("다른 문제 풀기", type="primary"):
-            st.session_state.quiz_ids = []
-            st.session_state.quiz_finished = False
-            st.session_state.page = "문제 찾기"
-            st.rerun()
+        st.button(
+            "다른 문제 풀기",
+            type="primary",
+            on_click=lambda: setattr(
+                st.session_state, "navigation", "문제 찾기"
+            )
+        )
 
     else:
 
-        index = min(
-            st.session_state.quiz_index,
-            len(quiz_questions) - 1
-        )
-
+        index = st.session_state.quiz_index
         q = quiz_questions[index]
 
         st.progress(
@@ -487,7 +555,7 @@ elif st.session_state.page == "문제 풀기":
 
         st.caption(
             f"{q['subject']} | {q['grade']} | "
-            f"{q['year']}년 {q['exam']}"
+            f"{q['year']}년 | {q['exam']}"
         )
 
         with st.container(border=True):
@@ -497,27 +565,29 @@ elif st.session_state.page == "문제 풀기":
                 f"**문제 {index + 1}.** {q['question']}"
             )
 
-            # 현재 문제에 저장된 답이 있다면 표시
-            previous_answer = st.session_state.answers.get(q["id"])
-
-            selected = st.radio(
+            # 답을 선택하는 영역
+            st.radio(
                 "정답을 선택하세요.",
                 options=list(range(len(q["choices"]))),
                 format_func=lambda i: (
                     f"{i + 1}. {q['choices'][i]}"
                 ),
-                index=previous_answer,
                 key=f"answer_{q['id']}"
             )
 
-            if st.button(
+            st.button(
                 "정답 확인",
-                key=f"check_{q['id']}"
-            ):
+                key=f"check_{q['id']}",
+                on_click=check_answer,
+                args=(q["id"],)
+            )
 
-                st.session_state.answers[q["id"]] = selected
+            # 정답 확인 버튼을 눌렀을 때만 결과 표시
+            if q["id"] in st.session_state.checked:
 
-                if selected == q["answer"]:
+                chosen = st.session_state.answers.get(q["id"])
+
+                if chosen == q["answer"]:
                     st.success("정답입니다! 🎉")
                 else:
                     st.error(
@@ -527,74 +597,43 @@ elif st.session_state.page == "문제 풀기":
 
                 st.info(f"해설: {q['explanation']}")
 
-        previous_col, empty_col, next_col = st.columns([1, 2, 1])
+        prev_col, empty_col, next_col = st.columns([1, 2, 1])
 
-        with previous_col:
-
-            if st.button(
+        with prev_col:
+            st.button(
                 "← 이전",
                 disabled=index == 0,
-                use_container_width=True
-            ):
-                st.session_state.answers[q["id"]] = st.session_state.get(
-                    f"answer_{q['id']}", selected
-                )
-                st.session_state.quiz_index -= 1
-                st.rerun()
+                use_container_width=True,
+                on_click=previous_question,
+                args=(q["id"],)
+            )
 
         with next_col:
 
             if index < len(quiz_questions) - 1:
 
-                if st.button(
+                st.button(
                     "다음 →",
-                    use_container_width=True
-                ):
-                    st.session_state.answers[q["id"]] = st.session_state.get(
-                        f"answer_{q['id']}", selected
-                    )
-                    st.session_state.quiz_index += 1
-                    st.rerun()
+                    use_container_width=True,
+                    on_click=next_question,
+                    args=(q["id"],)
+                )
 
             else:
 
-                if st.button(
+                st.button(
                     "채점하기",
                     type="primary",
-                    use_container_width=True
-                ):
-
-                    st.session_state.answers[q["id"]] = st.session_state.get(
-                        f"answer_{q['id']}", selected
-                    )
-
-                    total = len(quiz_questions)
-
-                    correct = sum(
-                        1 for item in quiz_questions
-                        if st.session_state.answers.get(item["id"])
-                        == item["answer"]
-                    )
-
-                    score = round(correct / total * 100) if total else 0
-
-                    st.session_state.history.append({
-                        "완료 시각": datetime.now().strftime(
-                            "%Y-%m-%d %H:%M"
-                        ),
-                        "문제 수": total,
-                        "정답 수": correct,
-                        "점수": score
-                    })
-
-                    st.session_state.quiz_finished = True
-                    st.rerun()
+                    use_container_width=True,
+                    on_click=finish_quiz,
+                    args=(q["id"],)
+                )
 
 
-# ==================================================
-# 3. 학습 기록
-# ==================================================
-elif st.session_state.page == "학습 기록":
+# =====================================
+# 페이지 3: 학습 기록
+# =====================================
+elif st.session_state.navigation == "학습 기록":
 
     st.subheader("📊 나의 학습 기록")
 
@@ -615,38 +654,36 @@ elif st.session_state.page == "학습 기록":
             hide_index=True
         )
 
-        col1, col2 = st.columns(2)
+        c1, c2 = st.columns(2)
 
-        with col1:
+        with c1:
             st.metric(
                 "평균 점수",
                 f"{round(df['점수'].mean())}점"
             )
 
-        with col2:
+        with c2:
             st.metric(
                 "최고 점수",
                 f"{df['점수'].max()}점"
             )
 
-        csv_data = df.to_csv(
-            index=False
-        ).encode("utf-8-sig")
-
         st.download_button(
-            "학습 기록 CSV 다운로드",
-            data=csv_data,
+            "학습 기록 다운로드",
+            data=df.to_csv(
+                index=False
+            ).encode("utf-8-sig"),
             file_name="학습기록.csv",
             mime="text/csv"
         )
 
 
-# -------------------------
-# 페이지 하단
-# -------------------------
+# =====================================
+# 하단 안내
+# =====================================
 st.divider()
 
 st.caption(
-    "※ 현재 포함된 문제는 기능 확인을 위한 예시 문제이며, "
-    "실제 학교 기출문제가 아닙니다."
+    "현재 제공되는 문제는 기능 확인용 예시 문제입니다. "
+    "실제 학교 기출문제는 별도로 추가해야 합니다."
 )
